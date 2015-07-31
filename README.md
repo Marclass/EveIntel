@@ -4,9 +4,23 @@ Datamining tool for the game "Eve Online" using public pvp data.
 
 <p>This tool pulls public killmail data from https://zkillboard.com/ to analyze PvP activity in wormhole space.</p> 
 <p>It is intended to be used as the back end with the <a href="https://github.com/Marclass/limbo/tree/EveIntelBranch" >EveIntel branch of Limbo</a>, a slack client, as the front end, but it is not dependant on slack or any other particular front end</p>
+
+<h3>Requirements</h3>
+<p><a href="https://github.com/Marclass/EveCommon">EveCommon library</a> is used to pull killmails from https://zkillboard.com and connect to the Eve static database</p>
+<p><a href="https://github.com/eve-val/evelink">EveLink</a> is used to connect to Eve's xml api for some data imports, but may be dropped as a requirement in the future</p>
+<p><a href="https://pypi.python.org/pypi/tabulate"> tabulate</a> is used to format reports into nice ascii tables</p>
+<p><a href="https://developers.eveonline.com/resource/static-data-export">The Eve Static Data Export</a> (sqlite) is used to help populate the db</p>
+
 <h3>Setup</h3>
 <p>EveIntel runs off of a sqlite database that must be populated with data before use. As of 7/30/2015 the db size is 5.25GB for all kills in wspace, so I recommend only downloading what you actually need since Zkillboard is nice enough to offer the killmails for free. </p>
-<p>To setup the database: <ol><li>create a new sqlite3 db and use the make tables script to setup the schema</li><li>modify pullWHKills() in dbpopulate.py/dbpopulateCron to select the systems you want</li><li>modify sqlinterface to point to your sqlite3 db</li><li>set a custom useragent in zkillinterface.py</li><li>run dbpopulate and wait</li></ol></p>
+
+<p>To setup the database: 
+<ol><li>create a new sqlite3 db and use the make tables script to setup the schema</li>
+<li>modify pullWHKills() in dbpopulate.py/dbpopulateCron to select the systems you want</li>
+<li>modify sqlinterface to point to your sqlite3 db</li>
+<li>modify sdeinterface to point to your Eve static sqlite db</li>
+<li>set a custom useragent in zkillinterface.py</li>
+<li>run dbpopulate and wait</li></ol></p>
 
 <h3>Usage</h3>
 <p>Once setup, EveIntel is primarally used via the data processing interface. 
