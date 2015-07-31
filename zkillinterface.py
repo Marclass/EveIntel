@@ -8,7 +8,7 @@ from eveIntel.sdeinterface import sdeInterface
 
 class zKillInterface():
     sde = sdeInterface()
-    ec_useragent="zkillInterfaceTest1 by Marclass"
+    ec_useragent="EveIntel Default UserAgent/ Can not read directions"
 
 
 
