@@ -151,6 +151,108 @@ class dataProcessingInterface():
         report = home+"\r\n"
         return report
 
+    def genLeadershipReport(self, entity):
+        print("Leadership Report for: "+ entity)
+        entityID = self.sql.getEntityID(entity)
+        
+        if(not isinstance(entityID, int)):
+            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+            if(lastTOD is None):
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            if(len(lastTOD)>0):
+                lastTOD=lastTOD[0][0]
+            else:
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
+
+        start = int(time.time())
+
+        if(self.isChar(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return "You have given a character. Leadership reports are allowed for corporations or alliances only"
+        elif(self.isCorp(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genCorpLeadershipReport(entityID)
+        elif(self.isAlliance(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genAllianceLeadershipReport(entityID)
+        
+        else:
+            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+
+            if(len(lastTOD)>0):
+                lastTOD=lastTOD[0][0]
+            else:
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            
+            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
+        return "A failure state that should never have been reached was reached. Either your entity is not a corporation or alliance, or it has no killboard history in w space"
+    
+    def genCorpLeadershipReport(self, corpID):
+
+        start = int(time.time())
+        
+        r = self.genEntityLeadershipReport(self.sql.getLeadershipByCorp, corpID) 
+
+        end = int(time.time())
+
+        print("elapsed time was "+str(end-start) +" seconds to gen leadership for corp: "+str(corpID))
+        
+        return r
+        
+        
+
+    def genAllianceLeadershipReport(self, allianceID):
+
+        start = int(time.time())
+        
+        r = self.genEntityLeadershipReport(self.sql.getLeadershipByAlliance, allianceID)
+
+        end = int(time.time())
+
+        print("elapsed time was "+str(end-start) +" seconds to gen leadership for alliance: "+str(allianceID))
+        
+        return r
+    
+
+
+    def genEntityLeadershipReport(self, sqlCall, eID):
+        rhead=["Pilot", "KillCount", "PossibleKills", "Whore %", "NumFights", "Confidence"]
+        rtable=""
+        players = sqlCall(eID)
+
+        sort = self.processLeadershipReport(players)
+        rows=[]
+        for i in sort:
+            rows.append((i[1],i[2],i[3],i[4],i[5],i[6]))
+        response = tabulate(rows, headers = rhead)
+
+        return response
+
+    def processLeadershipReport(self, rows):
+        l=[]
+
+        for i in rows:
+            #calc confidence and append it to row then sort by confidence
+            killCount = i[2]
+            totalKills = i[3]
+            fightPercent =i[3]
+            fightNum = i[4]
+            #print(i)
+            
+            confidence = fightPercent**2 * 2**(fightNum/4)
+
+            l.append(list(i))
+            
+            l[-1].append(confidence)
+
+        l.sort(key = lambda x:x[-1], reverse = True)
+
+        return l[:15]
+        
     def genSolReport(self, sol):
         key = "solarSystemID"
 
@@ -334,7 +436,6 @@ class dataProcessingInterface():
 
     def findEntityDoctrines(self, eID, key, kills, losses):
         return "Doctrines not implemented"
-
 
 
 

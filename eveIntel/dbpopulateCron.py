@@ -74,7 +74,7 @@ def pullWHKills():
         print(str(delta) +" kils for this wh")
         print("At ID "+str(i))
         print("system name: "+ sde.getSolarNameBySolarID(str(i))+"\n")
-        time.sleep(12)
+        time.sleep(2)
 
 
 

@@ -289,6 +289,105 @@ from (
 """
         return self.sqlCommandParameterized(command, (system,system,system,system))
 
+    def getLeadershipByAlliance(self, allianceID):
+        command="""
+select player, p.name, sum(killCount) as killCount2, sum(totalKillCount) as totalKillCount2, (sum(killCount)+0.0)/sum(totalKillCount) as fightPercent2, count(player) as fightNum
+
+from 
+(select player, killCount, system, tod, totalKillCount
+
+from (select * from 
+(select player, count(distinct kill) as killCount , system, date(timeofdeath) as tod
+
+from 	
+	(select a1.kill, a1.player, k1.system, k1.timeofdeath 
+	from attackers a1, kills k1 
+	where 
+		a1.alliance=? and 
+		(select count(1) from attackers where kill = a1.kill)>=5 and 
+		a1.kill = k1.zkillid and 
+		a1.alliance = (select a2.alliance from attackers a2 where a1.player = a2.player order by kill desc limit 1)
+		and date(k1.timeofdeath) >= date('now', '-6 month') 
+		) kp 
+		
+		group by player, system, date(timeofdeath) ) s1
+		--group by system, date(timeofdeath)
+inner join 		
+
+(select system, date(timeofdeath) as tod, count(distinct kill) as totalkillCount 
+
+from 	
+	(select a1.kill, a1.player, k1.system, k1.timeofdeath 
+	from attackers a1, kills k1 
+	where 
+		a1.alliance=? and 
+		(select count(1) from attackers where kill = a1.kill)>=5 and 
+		a1.kill = k1.zkillid and 
+		a1.alliance = (select a2.alliance from attackers a2 where a1.player = a2.player order by kill desc limit 1)
+		and date(k1.timeofdeath) >= date('now', '-6 month') 
+		) kp 
+		
+		group by system, date(timeofdeath) ) s2
+		 
+		on s1.system =s2.system and s1.tod = s2.tod
+		)
+		), players p where player = p.ccpid 
+		
+		group by player
+		order by fightNum desc;
+"""
+        return self.sqlCommandParameterized(command, (allianceID, allianceID))
+        
+    def getLeadershipByCorp(self, corpID):
+        command="""
+select player, p.name, sum(killCount) as killCount2, sum(totalKillCount) as totalKillCount2, (sum(killCount)+0.0)/sum(totalKillCount) as fightPercent2, count(player) as fightNum
+
+from 
+(select player, killCount, system, tod, totalKillCount
+
+from (select * from 
+(select player, count(distinct kill) as killCount , system, date(timeofdeath) as tod
+
+from 	
+	(select a1.kill, a1.player, k1.system, k1.timeofdeath 
+	from attackers a1, kills k1 
+	where 
+		a1.corporation=? and 
+		(select count(1) from attackers where kill = a1.kill)>=5 and 
+		a1.kill = k1.zkillid and 
+		a1.corporation = (select a2.corporation from attackers a2 where a1.player = a2.player order by kill desc limit 1)
+		and date(k1.timeofdeath) >= date('now', '-6 month') 
+		) kp 
+		
+		group by player, system, date(timeofdeath) ) s1
+		--group by system, date(timeofdeath)
+inner join 		
+
+(select system, date(timeofdeath) as tod, count(distinct kill) as totalkillCount 
+
+from 	
+	(select a1.kill, a1.player, k1.system, k1.timeofdeath 
+	from attackers a1, kills k1 
+	where 
+		a1.corporation=? and 
+		(select count(1) from attackers where kill = a1.kill)>=5 and 
+		a1.kill = k1.zkillid and 
+		a1.corporation = (select a2.corporation from attackers a2 where a1.player = a2.player order by kill desc limit 1)
+		and date(k1.timeofdeath) >= date('now', '-6 month') 
+		) kp 
+		
+		group by system, date(timeofdeath) ) s2
+		 
+		on s1.system =s2.system and s1.tod = s2.tod
+		)
+		), players p where player = p.ccpid 
+		
+		group by player
+		order by fightNum desc;
+"""
+        return self.sqlCommandParameterized(command, (corpID, corpID))
+
+
     def getEntityID(self, entity):
 
         array =["players", "corporations","alliances", "systems"]
