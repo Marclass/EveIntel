@@ -106,7 +106,7 @@ class dataProcessingInterface():
         if(type(kills) == str):
             return kills
         home = self.findCharHome(char, key, kills, [])
-        report = home+"\r\n"
+        report = home
         return report
 
     def genCorpReport(self, corp):
@@ -129,7 +129,7 @@ class dataProcessingInterface():
 
         print("elapsed time was "+str(end-start) +" seconds to process kills for corp: "+str(corp))
         
-        report = home+"\r\n"
+        report = home
         return report
 
     def genAllianceReport(self, alliance):
@@ -148,7 +148,7 @@ class dataProcessingInterface():
             return kills
         
         home = self.findCharHome(alliance, key, kills, [])
-        report = home+"\r\n"
+        report = home
         return report
 
     def genLeadershipReport(self, entity):
@@ -312,7 +312,7 @@ class dataProcessingInterface():
         for i in range(len(l)):
             if(l[i][5]>=1000000):
                 l[i][5]="Inf"
-            if(len(l[i][4])<27):
+            if(False and len(l[i][4])<27):
                 l[i][4] = l[i][4] +"_"*(27- len(l[i][4])) #pad with underscores 
         
         l = l[0:min(len(kills),10)] #take top 10 systems
