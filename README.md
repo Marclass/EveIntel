@@ -8,8 +8,9 @@ Datamining tool for the game "Eve Online" using public pvp data.
 <h3>Requirements</h3>
 <p><a href="https://github.com/Marclass/EveCommon">EveCommon library</a> is used to pull killmails from https://zkillboard.com and connect to the Eve static database</p>
 <p><a href="https://github.com/eve-val/evelink">EveLink</a> is used to connect to Eve's xml api for some data imports, but may be dropped as a requirement in the future</p>
-<p><a href="https://pypi.python.org/pypi/tabulate"> tabulate</a> is used to format reports into nice ascii tables</p>
 <p><a href="https://developers.eveonline.com/resource/static-data-export">The Eve Static Data Export</a> (sqlite) is used to help populate the db</p>
+<p><a href="https://pypi.python.org/pypi/tabulate"> tabulate</a> is used to format reports into nice ascii tables</p>
+<p><a href="https://pypi.python.org/pypi/ascii_graph/0.2.1">ascii_graph</a> is used to graph certain reports for easy representation on slack</p>
 
 <h3>Setup</h3>
 <p>EveIntel runs off of a sqlite database that must be populated with data before use. As of 7/30/2015 the db size is 5.25GB for all kills in wspace, so I recommend only downloading what you actually need since Zkillboard is nice enough to offer the killmails for free. </p>
@@ -19,6 +20,7 @@ Datamining tool for the game "Eve Online" using public pvp data.
 <li>modify pullWHKills() in dbpopulate.py/dbpopulateCron to select the systems you want</li>
 <li>modify sqlinterface to point to your sqlite3 db</li>
 <li>modify sdeinterface to point to your Eve static sqlite db</li>
+<li>populate systems in the db</li>
 <li>set a custom useragent in zkillinterface.py</li>
 <li>run dbpopulate and wait</li></ol></p>
 
