@@ -3,6 +3,8 @@ from eveIntel.sqlinterface import sqlConnection
 from tabulate import tabulate
 from eveIntel.sdeinterface import sdeInterface
 
+from ascii_graph import Pyasciigraph
+
 import time
 from datetime import date
 import datetime
@@ -252,6 +254,64 @@ class dataProcessingInterface():
         l.sort(key = lambda x:x[-1], reverse = True)
 
         return l[:15]
+
+
+
+    def genHrsReport(self, entity):
+        print("Hrs Report for: "+ entity)
+        entityID = self.sql.getEntityID(entity)
+        
+        if(not isinstance(entityID, int)):
+            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+            if(lastTOD is None):
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            if(len(lastTOD)>0):
+                lastTOD=lastTOD[0][0]
+            else:
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
+
+        start = int(time.time())
+
+        if(self.isChar(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genCharacterHrsReport(entityID)
+        elif(self.isCorp(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genCorpHrsReport(entityID)
+        elif(self.isAlliance(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genAllianceHrsReport(entityID)
+        
+        else:
+            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+
+            if(len(lastTOD)>0):
+                lastTOD=lastTOD[0][0]
+            else:
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            
+            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
+        return "A failure state that should never have been reached was reached. Either your entity is not a character, corporation, or alliance, or it has no killboard history in w space"
+    
+    def genEntityHrsReport(self, hrFunction, eID):
+        
+        rows = hrFunction(eID)
+        graph = Pyasciigraph()
+        ascii = ""
+        for line in graph.graph('Hr Report', rows):
+            ascii = ascii+line+"\n"
+        return ascii
+
+    def genCorpHrsReport(self, corpID):
+        return self.genEntityHrsReport(self.sql.getHrsByCorp, corpID)
+    def genAllianceHrsReport(self, allianceID):
+        return self.genEntityHrsReport(self.sql.getHrsByAlliance, allianceID)
+    def genCharacterHrsReport(self, charID):
+        return self.genEntityHrsReport(self.sql.getHrsByCharacter, charID)
         
     def genSolReport(self, sol):
         key = "solarSystemID"

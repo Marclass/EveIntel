@@ -112,7 +112,7 @@ class sqlConnection():
         
         command="insert or ignore into killsRaw (zKillID, killmail, processed, skipped) values (?,?, 'False','False');"
         return self.sqlCommandParameterized(command, (zkillID, rawKM))
-
+ 
     def insertAlliance(self, ccpID, name):
         command = "insert or ignore into alliances (ccpID, name) values (?,?);"
         return self.sqlCommandParameterized(command, (ccpID, name))
@@ -387,7 +387,58 @@ from
 """
         return self.sqlCommandParameterized(command, (corpID, corpID))
 
+    def getHrsByCorp(self, corpID):
+        command="""select substr(time(ks.timeofdeath),0,3) as hr, count(distinct ks.zkillid) 
+from kills ks where ks.zkillid in
+(
+select distinct k.zkillid as zkillid
+from kills k 
+where k.corporation = ?
 
+union 
+
+select distinct a.kill
+from attackers a
+where a.corporation = ?) 
+
+group by hr"""
+        return self.sqlCommandParameterized(command, (corpID, corpID))
+
+    def getHrsByAlliance(self, allianceID):
+        command="""select substr(time(ks.timeofdeath),0,3) as hr, count(distinct ks.zkillid) 
+from kills ks where ks.zkillid in
+(
+select distinct k.zkillid as zkillid
+from kills k 
+where k.alliance = ?
+
+union 
+
+select distinct a.kill
+from attackers a
+where a.alliance = ?) 
+
+group by hr"""
+        return self.sqlCommandParameterized(command, (allianceID, allianceID))
+
+
+    def getHrsByCharacter(self, charID):
+        command="""select substr(time(ks.timeofdeath),0,3) as hr, count(distinct ks.zkillid) 
+from kills ks where ks.zkillid in
+(
+select distinct k.zkillid as zkillid
+from kills k 
+where k.victim = ?
+
+union 
+
+select distinct a.kill
+from attackers a
+where a.player = ?) 
+
+group by hr"""
+        return self.sqlCommandParameterized(command, (charID, charID))
+        
     def getEntityID(self, entity):
 
         array =["players", "corporations","alliances", "systems"]
