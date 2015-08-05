@@ -25,7 +25,16 @@ Datamining tool for the game "Eve Online" using public pvp data.
 <li>run dbpopulate and wait</li></ol></p>
 
 <h3>Usage</h3>
-<p>Once setup, EveIntel is primarally used via the data processing interface. 
+<p>Once setup, EveIntel is primarally used via the data processing interface.</p>
+<p>Current reports:
+<ol>
+<li>Entity home report: find entity home</li>
+<li>Solar system report: find entity that lives in system</li>
+<li>FC/PvP report: find players best at following primaries. FCs tend to rank highly</li>
+<li>Hr report: creates a graph showing when entity is most active</li>
+</ol></p>
+<p> Example usage:
+note: reports other than home and system reports are not called via genReport(), expect an api refractor in the future
 <pre>
 <code>
 from eveIntel.dataprocessinginterface import dataProcessingInterface
@@ -55,18 +64,18 @@ J110018                  57                  8                   0.729        91
 
 print(data.genReport("J100820"))
 
-corporation                    Kills+losses    Days Represented    Confidence Rating  Most recent kill/loss
----------------------------  --------------  ------------------  -------------------  -----------------------
-Sleeper Social Club________            1848                 481                  inf  2015-07-28
-Future Corps_______________            1832                 480                  inf  2015-07-28
-Lazerhawks_________________              84                  22               172032  2015-07-25
-Ixtab._____________________              52                   9                  208  2015-06-23
-Brave Collective___________               9                   5                   36  2015-07-20
-Atztech Inc._______________              29                   5                   29  2015-06-23
-The Desolate Order_________               7                   4                   28  2015-07-20
-Isogen 5___________________               7                   4                   28  2015-07-24
-Wormhole Holders___________               6                   4                   24  2015-07-28
-Aliastra___________________               7                   2                    7  2015-07-03
+corporation            Kills+losses    Days Represented    Confidence Rating  Most recent kill/loss
+-------------------  --------------  ------------------  -------------------  -----------------------
+Sleeper Social Club            1852                 484                  inf  2015-08-03
+Future Corps                   1836                 483                  inf  2015-08-03
+Lazerhawks                       84                  22               172032  2015-07-25
+Ixtab.                           52                   9                  104  2015-06-23
+Isogen 5                          7                   4                   28  2015-07-24
+Wormhole Holders                  6                   4                   24  2015-07-28
+Brave Collective                  9                   5                   18  2015-07-20
+The Desolate Order                7                   4                   14  2015-07-20
+Atztech Inc.                     29                   5                   14  2015-06-23
+EVE University                    4                   3                    8  2015-08-03
 </code>
 </pre>
 Because the db is powered by sqlite it doesn't handle multiple users very well, but a switch to postgres is planned for later.
