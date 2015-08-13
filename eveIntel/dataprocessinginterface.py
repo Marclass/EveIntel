@@ -153,6 +153,18 @@ class dataProcessingInterface():
         report = home
         return report
 
+    def genSiegeReport(self):
+        sieges = self.sql.getSieges()
+        rhead = ["System", "Besieged", "Siege Date", "Siegers", "num Structures killed"]
+
+        rows=[]
+        for i in sieges:
+            rows.append( (i[0],i[1],i[2],i[3],i[4]) )
+        response = tabulate(rows, headers = rhead)
+
+        return response
+    
+
     def genLeadershipReport(self, entity):
         print("Leadership Report for: "+ entity)
         entityID = self.sql.getEntityID(entity)

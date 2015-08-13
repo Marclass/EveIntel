@@ -438,7 +438,21 @@ where a.player = ?)
 
 group by hr"""
         return self.sqlCommandParameterized(command, (charID, charID))
-        
+
+    def getSieges(self):
+        command="""select s.name as systemName, c1.name as siegedCorpName, date(k.timeofdeath) as timeofdeath, c2.name as siegingCorpName, count(distinct k.zkillid) as numDeaths
+from
+kills k, attackers a, corporations  as c1, corporations  as c2, systems s
+
+where k.zkillID in (select k.zkillid from kills k where victim = 0 and date(timeofdeath)>= date('now', '-1 day'))
+and k.corporation = c1.ccpid and k.zkillid = a.kill and a.corporation = c2.ccpid and k.system = s.ccpid
+
+group by system, siegedCorpName, date(timeofdeath)
+
+order by numDeaths desc limit 15"""
+        return self.sqlCommand(command)
+
+    
     def getEntityID(self, entity):
 
         array =["players", "corporations","alliances", "systems"]
