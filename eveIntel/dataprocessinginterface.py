@@ -155,11 +155,11 @@ class dataProcessingInterface():
 
     def genSiegeReport(self):
         sieges = self.sql.getSieges()
-        rhead = ["System", "Besieged", "Siege Date", "Siegers", "num Structures killed"]
+        rhead = ["System", "Besieged", "Siege Date", "Siegers", "num Structures killed", "num Attackers"]
 
         rows=[]
         for i in sieges:
-            rows.append( (i[0],i[1],i[2],i[3],i[4]) )
+            rows.append( (i[0],i[1],i[2],i[3],i[4],i[5]) )
         response = tabulate(rows, headers = rhead)
 
         return response
