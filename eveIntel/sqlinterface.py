@@ -3,6 +3,7 @@
 import sqlite3 as sql
 import sys
 import os
+from datetime import datetime
 
 
 class sqlConnection():
@@ -10,19 +11,29 @@ class sqlConnection():
     def __init__(self):
         
         #self.dbDir = "D:\\sqlite3"
-        self.dbDir = "K:\\sqlite3"
+        self.dbDir = "I:\\sqlite3"
         os.chdir(self.dbDir)
         self.dbName = "test.db"
         self.con = None
+        self.dedicatedCursor=None
+        
     def connect(self):
-        self.con = sql.connect(self.dbName)
+        self.con = sql.connect(self.dbName, check_same_thread=False)
     def commit(self):
         self.con.commit()
     def close(self):
         self.con.close()
         
-    def setDBDir(d):
+    def setDBDir(self, d):
         self.dbDir = d
+    def setConnection(self, connection):
+        print("connection set")
+        if(self.con):
+            self.con.close()
+            print("closed connection")
+        self.con = connection
+    def setDedicatedCursor(self, cur):
+        self.dedicatedCursor=cur 
 
     def __interactive(self):
         #
@@ -72,7 +83,7 @@ class sqlConnection():
 
     def sqlCommandParameterized(self, command, params):
         #
-           
+        
         cur = self.con.cursor()
         try:
             cur.execute(command, params)
@@ -91,7 +102,9 @@ class sqlConnection():
     def sqlCommandParameterized2(self, command, params):
         #
            
+        
         cur = self.con.cursor()
+            
         try:
             cur.execute(command, params)
             #self.con.commit()
@@ -112,7 +125,7 @@ class sqlConnection():
         
         command="insert or ignore into killsRaw (zKillID, killmail, processed, skipped) values (?,?, 'False','False');"
         return self.sqlCommandParameterized(command, (zkillID, rawKM))
- 
+       
     def insertAlliance(self, ccpID, name):
         command = "insert or ignore into alliances (ccpID, name) values (?,?);"
         return self.sqlCommandParameterized(command, (ccpID, name))
@@ -131,6 +144,9 @@ class sqlConnection():
 
     def getSystemByCCPID(self, ccpID):
         command="select * from systems where ccpID=?;"
+        return self.sqlCommandParameterized(command, (ccpID,))
+    def getSolarNameBySolarID(self, ccpID):
+        command="select name from systems where ccpid=?;"
         return self.sqlCommandParameterized(command, (ccpID,))
     def getSystemByName(self, name):
         command="select * from systems where name = ?;"
@@ -388,7 +404,7 @@ from
         return self.sqlCommandParameterized(command, (corpID, corpID))
 
     def getHrsByCorp(self, corpID):
-        command="""select substr(time(ks.timeofdeath),0,3) as hr, count(distinct ks.zkillid) 
+        command="""select substr(time(ks.timeofdeath),0,3)||':00' as hr, count(distinct ks.zkillid) 
 from kills ks where ks.zkillid in
 (
 select distinct k.zkillid as zkillid
@@ -405,7 +421,7 @@ group by hr"""
         return self.sqlCommandParameterized(command, (corpID, corpID))
 
     def getHrsByAlliance(self, allianceID):
-        command="""select substr(time(ks.timeofdeath),0,3) as hr, count(distinct ks.zkillid) 
+        command="""select substr(time(ks.timeofdeath),0,3)||':00' as hr, count(distinct ks.zkillid) 
 from kills ks where ks.zkillid in
 (
 select distinct k.zkillid as zkillid
@@ -423,7 +439,7 @@ group by hr"""
 
 
     def getHrsByCharacter(self, charID):
-        command="""select substr(time(ks.timeofdeath),0,3) as hr, count(distinct ks.zkillid) 
+        command="""select substr(time(ks.timeofdeath),0,3)||':00' as hr, count(distinct ks.zkillid) 
 from kills ks where ks.zkillid in
 (
 select distinct k.zkillid as zkillid
@@ -451,7 +467,6 @@ group by system, siegedCorpName, date(timeofdeath)
 
 order by numDeaths desc limit 15"""
         return self.sqlCommand(command)
-
     
     def getEntityID(self, entity):
 
@@ -462,7 +477,18 @@ order by numDeaths desc limit 15"""
             if(type(r) ==list and len(r) >0):
                 return r[0][0]
         return None
-        
+    
+    def getCachedReport(self, reportType, entityID):
+        command="""select content from reportCache
+where reportType=? and entityID =? and valid='True';"""
+        return self.sqlCommandParameterized(command, (reportType, entityID))
+    
+    def insertCachedReport(self, reportType, entityID, content):
+        command="""insert or replace into
+reportCache(reportType, entityID, cacheTime, content, valid)
+values(?,?,?,?,'True');"""
+        dateTime = str(datetime.now())
+        self.sqlCommandParameterized(command, (reportType, entityID, dateTime, content))
 
 ##http://eve-search.com/thread/1336559-0#21
 ##

@@ -105,7 +105,14 @@ create table if not exists killsRaw(
 	
 );
 
-
+create table if not exists reportCache(
+	id integer primary key,
+	reportType int not null,
+	entityID int not null,
+	cacheTime datetime not null,
+	content varchar not null,
+	valid boolean not null
+);
 
 
 create index if not exists attackersCorporation on attackers (corporation);
@@ -145,69 +152,4 @@ create index if not exists killsSystemAlliance on kills(system, alliance);
 create index if not exists attackersSystemCorporation on attackers (kill, corporation);
 create index if not exists attackersSystemAlliance on attackers (kill, alliance);
 
-
-
-
-/*
---select count( k.corporation) as vCorp,count(  k.alliance) as vAlliance, count(distinct  a.corporation) as aCorp, count(distinct  a.alliance) as aAlliance
-
---select  zkillid, timeofdeath, kCorp, count( kCorp) as vCorp, kAlliance, count(  kAlliance) as vAlliance,  aCorp, count(  aCorp) as aCorp2, aAlliance, count(  aAlliance) as aAlliance2
-
-select aCorp, count(aCorp) as aCorp2
-from (
-			select k.zkillid, k.victim as kVic, k.timeofdeath, k.corporation as kCorp, k.alliance as kAlliance,  a.player as aPlayer, a.corporation as aCorp, a.alliance as aAlliance 
-		
-                    from kills k inner join attackers a on a.kill = k.zkillid
-                    where k.zkillid>0 and k.system = 31000510
-					group by k.zkillid, aCorp, aAlliance
-					order by k.timeofdeath desc
-		)
-		group by  aCorp
-		order by aCorp2 desc;
-		*/
-		
-		
-		
-		
-/*
-
-
-
-
---select count( k.corporation) as vCorp,count(  k.alliance) as vAlliance, count(distinct  a.corporation) as aCorp, count(distinct  a.alliance) as aAlliance
-
---select  zkillid, timeofdeath, kCorp, count( kCorp) as vCorp, kAlliance, count(  kAlliance) as vAlliance,  aCorp, count(  aCorp) as aCorp2, aAlliance, count(  aAlliance) as aAlliance2
-
-
-select aCorp, count(aCorp)  as aCorp2, max(timeofdeath) as timeofdeath, count(distinct date(timeofdeath)) as daysRepresented, name
-from (
-			select k.zkillid, k.victim as kVic, k.corporation as vCorp, k.timeofdeath, k.corporation as kCorp, k.alliance as kAlliance,  a.player as aPlayer, a.corporation as aCorp, a.alliance as aAlliance 
-		
-                    from kills k inner join attackers a on a.kill = k.zkillid
-                    where k.zkillid>0 and k.system = 31000510
-					group by k.zkillid, aCorp, aAlliance
-					order by k.timeofdeath desc
-		), corporations
-		where aCorp = corporations.ccpid
-		group by  aCorp
-		
-		
-		
-		union
-		
-		select aAlliance, count(aAlliance) as aAlliance2, max(timeofdeath) as timeofdeath, count(distinct date(timeofdeath)) as daysRepresented, name
-		from 
-		(
-		select k.zkillid, k.victim as kVic, k.corporation as vCorp, k.timeofdeath, k.corporation as kCorp, k.alliance as kAlliance,  a.player as aPlayer, a.corporation as aCorp, a.alliance as aAlliance 
-		
-                    from kills k inner join attackers a on a.kill = k.zkillid
-                    where k.zkillid>0 and k.system = 31000510
-					group by k.zkillid, aCorp, aAlliance
-					order by k.timeofdeath desc
-		
-		), alliances 
-		where aAlliance = alliances.ccpID
-		group by aAlliance
-		order by aCorp2 desc, timeofdeath;
-
-*/
+create index if not exists reportCacheAll on reportCache (reportType, entityID, cacheTime, valid);
