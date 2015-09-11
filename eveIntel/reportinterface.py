@@ -11,7 +11,7 @@ class reportInterface():
     ##def getHomeRaw(entityName):
     ##    return data.genReport(entityName)
 
-    def getHome(self, entityName):
+    def getHomeReport(self, entityName):
         return self.reportOrErr(self.data.genReport, entityName)
     
     def getHomeReportRaw(self, entityName):
