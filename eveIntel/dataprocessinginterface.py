@@ -8,17 +8,19 @@ from ascii_graph import Pyasciigraph
 import time
 from datetime import date
 import datetime
+from ast import literal_eval
 
 #Characters: ]90000000, 98000000[ ## only applies to stuff made after 64 bit
 #Corporations: ]98000000, 99000000[ ## move, older shit will not fall in
 #Alliances: ]99000000, 100000000[## these ranges :(
 class dataProcessingInterface():
-    eve  = evelinkinterface()
-    sql = sqlConnection()
-    sql.connect()
-    sde = sdeInterface()
+    def __init__(self):
+        self.eve  = evelinkinterface()
+        self.sql = sqlConnection()
+        self.sql.connect()
+        self.sde = sdeInterface()
 
-    homeHeader=["System", "#Kills", "#Losses", "Kill dt avg",
+        self.homeHeader=["System", "#Kills", "#Losses", "Kill dt avg",
                 "Loss dt avg", "Kill dt variance", "Loss dt variance",
                 "First Kill/Loss", "Last Kill/Loss", "Certainty"]
     def genReport(self, entity):
@@ -44,19 +46,19 @@ class dataProcessingInterface():
         start = int(time.time())
         if(self.isChar(entityID)):
             end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
+            print("isChar took: "+str(end-start)+"")
             return self.genCharReport(entityID)
         elif(self.isCorp(entityID)):
             end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
+            print("isCorp took: "+str(end-start)+"")
             return self.genCorpReport(entityID)
         elif(self.isAlliance(entityID)):
             end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
+            print("isAlliance took: "+str(end-start)+"")
             return self.genAllianceReport(entityID)
         elif(self.isSystem(entityID)):
             end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
+            print("isSystem took: "+str(end-start)+"")
             return self.genSolReport(entityID)
         else:
             lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
@@ -69,22 +71,71 @@ class dataProcessingInterface():
             return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
         return report
 
+    def genReportRaw(self, entity):
+        report = ""
+        start = int(time.time())
+        entityID = self.sql.getEntityID(entity)
+        end = int(time.time())
+
+        print("it took "+ str(end-start) +" seconds to look up: "+ str(entity))
+        
+        #if(entityID is None):
+            #entityID = self.eve.resolveIDFromName(entity)
+        #print(entityID)
+        if(not isinstance(entityID, int)):
+            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+            if(lastTOD is None):
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            if(len(lastTOD)>0):
+                lastTOD=lastTOD[0][0]
+            else:
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
+        start = int(time.time())
+        if(self.isChar(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genCharReportRaw(entityID)
+        elif(self.isCorp(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genCorpReportRaw(entityID)
+        elif(self.isAlliance(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genAllianceReportRaw(entityID)
+        elif(self.isSystem(entityID)):
+            end  = int(time.time())
+            print("isX took: "+str(end-start)+"")
+            return self.genSolReportRaw(entityID)
+        else:
+            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+
+            if(len(lastTOD)>0):
+                lastTOD=lastTOD[0][0]
+            else:
+                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+            
+            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
+        return report
+    
 
     def isChar(self, entityID):
-        if(int(entityID)>=90000000 and int(entityID <98000000)):
+        if(int(entityID)>=90000000 and (int(entityID) <98000000)):
             return True
+        #print("isChar checking db")
         return len(self.sql.getCharacterByCCPID(entityID)) >0
         #return False
 
     def isCorp(self, entityID):
-        if(int(entityID)>=98000000 and int(entityID <99000000)):
+        if(int(entityID)>=98000000 and (int(entityID) <99000000)):
             return True
         return len(self.sql.getCorpByCCPID(entityID)) >0
         
         #return False
         
     def isAlliance(self, entityID):
-        if(int(entityID)>=99000000 and int(entityID <100000000)):
+        if(int(entityID)>=99000000 and (int(entityID) <100000000)):
             return True
         return len(self.sql.getAllianceByCCPID(entityID)) >0
 
@@ -100,21 +151,73 @@ class dataProcessingInterface():
         #kills = self.sql.getKillsByCharacterID(char)
         #losses = self.sql.getLossesByCharacterID(char)
 
+        start = int(time.time())
+        
+        r=self.sql.getCachedReport(self.getHomeReportType(), char)
+        if(len(r)>0):
+            print("using cache")
+            end = int(time.time())
+
+            print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(char))
+            return self.findCharHome(char, key, [],[])
+        
         report =""
         
         kills = self.sql.getKillsAndLossesByCharacter(char)
         #print(type(kills))
         #print(kills)
+
+        print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(char))
+        
         if(type(kills) == str):
             return kills
         home = self.findCharHome(char, key, kills, [])
         report = home
         return report
 
+    def genCharReportRaw(self, char):
+        key = "characterID"
+        
+        #kills = self.sql.getKillsByCharacterID(char)
+        #losses = self.sql.getLossesByCharacterID(char)
+        
+        start = int(time.time())
+
+        r=self.sql.getCachedReport(self.getHomeReportType(), char)
+        if(len(r)>0):
+            print("using cache")
+            end = int(time.time())
+
+            print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(char))
+            return self.findCharHomeRaw(char, key, [],[])
+        
+        report =""
+        
+        kills = self.sql.getKillsAndLossesByCharacter(char)
+        #print(type(kills))
+        #print(kills)
+
+        print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(char))
+        
+        if(type(kills) == str):
+            return kills
+        home = self.findCharHomeRaw(char, key, kills, [])
+        report = home
+        return report
+
+
     def genCorpReport(self, corp):
         key = "corporationID"
         report =""
         start = int(time.time())
+
+        r=self.sql.getCachedReport(self.getHomeReportType(), corp)
+        if(len(r)>0):
+            print("using cache")
+            end = int(time.time())
+
+            print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(corp))
+            return self.findCharHome(corp, key, [],[])
         
         kills = self.sql.getKillsAndLossesByCorp(corp)
 
@@ -134,11 +237,51 @@ class dataProcessingInterface():
         report = home
         return report
 
+    def genCorpReportRaw(self, corp):
+        key = "corporationID"
+        report =""
+        start = int(time.time())
+
+        r=self.sql.getCachedReport(self.getHomeReportType(), corp)
+        if(len(r)>0):
+            print("using cache")
+            end = int(time.time())
+
+            print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(corp))
+            return self.findCharHomeRaw(corp, key, [],[])
+        
+        kills = self.sql.getKillsAndLossesByCorp(corp)
+
+        end = int(time.time())
+
+        print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(corp))
+        if(type(kills) == str):
+            return kills
+
+        start = int(time.time())
+        
+        home = self.findCharHomeRaw(corp, key, kills, [])
+        end = int(time.time())
+
+        print("elapsed time was "+str(end-start) +" seconds to process kills for corp: "+str(corp))
+        
+        report = home
+        
+        return report
+
     def genAllianceReport(self, alliance):
         key = "allianceID"
         report =""
 
         start = int(time.time())
+
+        r=self.sql.getCachedReport(self.getHomeReportType(), alliance)
+        if(len(r)>0):
+            print("using cache")
+            end = int(time.time())
+
+            print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(alliance))
+            return self.findCharHome(alliance, key, [],[])
         
         kills = self.sql.getKillsAndLossesByAlliance(alliance)
 
@@ -153,16 +296,32 @@ class dataProcessingInterface():
         report = home
         return report
 
-    def genSiegeReport(self):
-        sieges = self.sql.getSieges()
-        rhead = ["System", "Besieged", "Siege Date", "Siegers", "num Structures killed", "num Attackers"]
+    def genAllianceReportRaw(self, alliance):
+        key = "allianceID"
+        report =""
 
-        rows=[]
-        for i in sieges:
-            rows.append( (i[0],i[1],i[2],i[3],i[4],i[5]) )
-        response = tabulate(rows, headers = rhead)
+        start = int(time.time())
 
-        return response
+        r=self.sql.getCachedReport(self.getHomeReportType(), alliance)
+        if(len(r)>0):
+            print("using cache")
+            end = int(time.time())
+
+            print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(alliance))
+            return self.findCharHomeRaw(alliance, key, [],[])
+        
+        kills = self.sql.getKillsAndLossesByAlliance(alliance)
+
+        end = int(time.time())
+
+        print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(alliance))
+        
+        if(type(kills) == str):
+            return kills
+        
+        home = self.findCharHomeRaw(alliance, key, kills, [])
+        report = home
+        return report
     
 
     def genLeadershipReport(self, entity):
@@ -204,6 +363,29 @@ class dataProcessingInterface():
             
             return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
         return "A failure state that should never have been reached was reached. Either your entity is not a corporation or alliance, or it has no killboard history in w space"
+
+    def genSiegeReport(self):
+        print("generating siege report")
+
+        r=self.sql.getCachedReport(self.getSiegeReportType(), 0)
+        if(len(r)>0 and False):
+            print("using cache")
+            rows = literal_eval(r[0][0])
+            
+            return tabulate(rows, headers = rhead)
+            
+            
+        sieges = self.sql.getSieges()
+        rhead = ["System", "Besieged", "Siege Date", "Siegers", "num Structures killed", "num Attackers"]
+
+        rows=[]
+        for i in sieges:
+            rows.append( (i[0],i[1],i[2],i[3],i[4], i[5]) )
+
+        self.sql.insertCachedReport(self.getSiegeReportType(), 0, str(rows))
+        response = tabulate(rows, headers = rhead)
+
+        return response
     
     def genCorpLeadershipReport(self, corpID):
 
@@ -235,6 +417,16 @@ class dataProcessingInterface():
 
     def genEntityLeadershipReport(self, sqlCall, eID):
         rhead=["Pilot", "KillCount", "PossibleKills", "Whore %", "NumFights", "Confidence"]
+        
+        r=self.sql.getCachedReport(self.getLeadershipReportType(), eID)
+        if(len(r)>0):
+            print("using cache")
+            rows = literal_eval(r[0][0])
+            #print(rows)
+            #print(r)
+            return tabulate(rows, headers = rhead)
+            #rows=[]
+        
         rtable=""
         players = sqlCall(eID)
 
@@ -242,6 +434,9 @@ class dataProcessingInterface():
         rows=[]
         for i in sort:
             rows.append((i[1],i[2],i[3],i[4],i[5],i[6]))
+
+        self.sql.insertCachedReport(self.getLeadershipReportType(), eID, str(rows))
+        #print(str(type(rows) )+"\n"+str(rows))
         response = tabulate(rows, headers = rhead)
 
         return response
@@ -310,11 +505,19 @@ class dataProcessingInterface():
         return "A failure state that should never have been reached was reached. Either your entity is not a character, corporation, or alliance, or it has no killboard history in w space"
     
     def genEntityHrsReport(self, hrFunction, eID):
+
+        r=self.sql.getCachedReport(self.getHrsReportType(), eID)
+        if(len(r)>0):
+            print("using cache")
+            rows = literal_eval(r[0][0])
+        else:
+            rows = hrFunction(eID)
+        #print(rows)
+        self.sql.insertCachedReport(self.getHrsReportType(), eID, str(rows))
         
-        rows = hrFunction(eID)
         graph = Pyasciigraph()
         ascii = ""
-        for line in graph.graph('Hr Report', rows):
+        for line in graph.graph('Activity by time of day (Eve time)', rows):
             ascii = ascii+line+"\n"
         return ascii
 
@@ -325,10 +528,27 @@ class dataProcessingInterface():
     def genCharacterHrsReport(self, charID):
         return self.genEntityHrsReport(self.sql.getHrsByCharacter, charID)
         
-    def genSolReport(self, sol):
+    def genSolReport(self, sol, useCache=True):
+        #print("start genSolReport")
+        rhead =["corporation", "Kills+losses", "Days Represented","Confidence Rating", "Most recent kill/loss"]
+
+        rows = self.genSolReportRaw(sol)
+        #print(len(rows))
+        response = tabulate(rows, headers = rhead)
+
+        
+        return response
+
+    def genSolReportRaw(self, sol):
         key = "solarSystemID"
+        
+        r=self.sql.getCachedReport(self.getSolReportType(), sol)
+        if(len(r)>0):
+            print("using cache")
+            return literal_eval(r[0][0])
 
         kills = self.sql.getKillsAndLossesBySystem(sol)
+        #print("kills Len= "+str(len(kills)))
         mails = self.processSolReportKills(kills)
         rhead =["corporation", "Kills+losses", "Days Represented","Confidence Rating", "Most recent kill/loss"]
         rtable=""
@@ -338,10 +558,11 @@ class dataProcessingInterface():
         
             
 
-        response = "\r\n\r\n" + tabulate(rows, headers = rhead)
+        #response = "\r\n\r\n" + tabulate(rows, headers = rhead)
 
+        self.sql.insertCachedReport(self.getSolReportType(), sol, str(rows))
         
-        return response
+        return rows
 
     def processSolReportKills(self, kills):
         #corp/AllianceID, kills+losses, last kill/loss, days represented(bugged by up to 2x off), name
@@ -393,6 +614,9 @@ class dataProcessingInterface():
     def findCharHome(self, eID, key, kills, losses):
         return self.findEntityHome(eID, key, kills+losses)
 
+    def findCharHomeRaw(self, eID, key, kills, losses):
+        return self.findEntityHomeRaw(eID, key, kills+losses)
+
     def findCharPeakTime(self, eID, key, kills, losses):
         return self.findEntityPeakTime(eID, key, kills, losses)
 
@@ -419,6 +643,22 @@ class dataProcessingInterface():
             
     def findEntityHome(self, eID, key, kills):
         #joint = kills+losses
+        response =""
+        killHead = ["System", "NumKills+Losses", "DaysRepresented", "Avg Kill Delta(days)", "Confidence Rating", "Most recent kill/loss"]
+
+
+        stats = self.findEntityHomeRaw(eID, key, kills)
+
+        response = tabulate(stats, headers = killHead) 
+        
+        return response
+
+    def findEntityHomeRaw(self, eID, key, kills):
+        #joint = kills+losses
+        r=self.sql.getCachedReport(self.getHomeReportType(), eID)
+        if(len(r)>0):
+            print("using cache")
+            return literal_eval(r[0][0])
         response =""
 
         killTable = ""
@@ -450,9 +690,12 @@ class dataProcessingInterface():
 
         stats = stats[0:min(len(stats),15)] #take top 15 systems
 
-        response = response + "\r\n\r\n" + tabulate(stats, headers = killHead) 
+        response = stats
         
+        self.sql.insertCachedReport(self.getHomeReportType(), eID, str(response))
+
         return response
+
     
     def processSystem(self, system):
         
@@ -461,7 +704,7 @@ class dataProcessingInterface():
 ##            print(system)
 ##            exit
         name = system[0][1]
-        name = self.sde.getSolarNameBySolarID(name)
+        name = self.sql.getSolarNameBySolarID(name)[0][0]
         killcount = len(system)
         days={}
         daycount = 0
@@ -527,6 +770,17 @@ class dataProcessingInterface():
 
         return sortedWH
 
+
+    def getHomeReportType(self):
+        return 1
+    def getSolReportType(self):
+        return 2
+    def getLeadershipReportType(self):
+        return 3
+    def getHrsReportType(self):
+        return 4
+    def getSiegeReportType(self):
+        return 5
 
 
 
