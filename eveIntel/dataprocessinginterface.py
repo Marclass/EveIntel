@@ -2,6 +2,8 @@ from eveIntel.evelinkinterface import evelinkinterface
 from eveIntel.sqlinterface import sqlConnection
 from tabulate import tabulate
 from eveIntel.sdeinterface import sdeInterface
+from eveIntel.Exceptions import *
+
 
 from ascii_graph import Pyasciigraph
 
@@ -9,7 +11,7 @@ import time
 from datetime import date
 import datetime
 from ast import literal_eval
-
+import inspect
 #Characters: ]90000000, 98000000[ ## only applies to stuff made after 64 bit
 #Corporations: ]98000000, 99000000[ ## move, older shit will not fall in
 #Alliances: ]99000000, 100000000[## these ranges :(
@@ -23,53 +25,43 @@ class dataProcessingInterface():
         self.homeHeader=["System", "#Kills", "#Losses", "Kill dt avg",
                 "Loss dt avg", "Kill dt variance", "Loss dt variance",
                 "First Kill/Loss", "Last Kill/Loss", "Certainty"]
-    def genReport(self, entity):
-        report = ""
-        start = int(time.time())
-        entityID = self.sql.getEntityID(entity)
-        end = int(time.time())
 
-        print("it took "+ str(end-start) +" seconds to look up: "+ str(entity))
         
-        #if(entityID is None):
-            #entityID = self.eve.resolveIDFromName(entity)
-        #print(entityID)
-        if(not isinstance(entityID, int)):
-            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
-            if(lastTOD is None):
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
-            if(len(lastTOD)>0):
-                lastTOD=lastTOD[0][0]
-            else:
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
-            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
-        start = int(time.time())
-        if(self.isChar(entityID)):
-            end  = int(time.time())
-            print("isChar took: "+str(end-start)+"")
-            return self.genCharReport(entityID)
-        elif(self.isCorp(entityID)):
-            end  = int(time.time())
-            print("isCorp took: "+str(end-start)+"")
-            return self.genCorpReport(entityID)
-        elif(self.isAlliance(entityID)):
-            end  = int(time.time())
-            print("isAlliance took: "+str(end-start)+"")
-            return self.genAllianceReport(entityID)
-        elif(self.isSystem(entityID)):
-            end  = int(time.time())
-            print("isSystem took: "+str(end-start)+"")
-            return self.genSolReport(entityID)
-        else:
-            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+    def genericReportWithErrorHandeling(self, validationReportPairs, args):
+        """attempts to run given reports and returns value for first report that passes input validation
+        want to use to reduce redundant code for starting different reports
+        return report value or None on failure"""
+        self.isDBlocked()
+        for i in validationReportPairs:
+            validator = i[0]
+            report = i[1]
+            start = int(time.time())
+            if(validator(args)):
+                end = int(time.time())
+                print(str(validator.func_name) +" took: "+str(end-start))
+                #print(report)
+                return report(args)
+        return None
 
-            if(len(lastTOD)>0):
-                lastTOD=lastTOD[0][0]
-            else:
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+
+    def genReport(self, entity):
+        """more compact genReport"""
+        pairs=[]
+        pairs.append((self.isChar, self.genCharReport))
+        pairs.append((self.isCorp, self.genCorpReport))
+        pairs.append((self.isAlliance, self.genAllianceReport))
+        pairs.append((self.isSystem, self.genSolReport))
+        
+        entityID = self.sql.getEntityID(entity)
+        if(entityID is None):
+            self.entityNotFound(entity)
             
-            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
+        report = self.genericReportWithErrorHandeling(pairs, entityID)
+
+        if(report is None):
+            self.entityNotFound(entity)
         return report
+        
 
     def genReportRaw(self, entity):
         report = ""
@@ -166,7 +158,7 @@ class dataProcessingInterface():
         kills = self.sql.getKillsAndLossesByCharacter(char)
         #print(type(kills))
         #print(kills)
-
+        end = int(time.time())
         print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(char))
         
         if(type(kills) == str):
@@ -197,7 +189,9 @@ class dataProcessingInterface():
         #print(type(kills))
         #print(kills)
 
-        print("elapsed time was "+str(end-start) +" seconds to pull kills for corp: "+str(char))
+        end = int(time.time())
+
+        print("elapsed time was "+str(end - start) +" seconds to pull kills for corp: "+str(char))
         
         if(type(kills) == str):
             return kills
@@ -322,48 +316,32 @@ class dataProcessingInterface():
         home = self.findCharHomeRaw(alliance, key, kills, [])
         report = home
         return report
-    
+
 
     def genLeadershipReport(self, entity):
-        print("Leadership Report for: "+ entity)
+        #genericReportWithErrorHandeling
+
+        pairs=[]
+        pairs.append((self.isChar, self.charLeadershipReportFailureWrapper))
+        pairs.append((self.isCorp, self.genCorpLeadershipReport))
+        pairs.append((self.isAlliance, self.genAllianceLeadershipReport))
+
         entityID = self.sql.getEntityID(entity)
-        
-        if(not isinstance(entityID, int)):
-            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
-            if(lastTOD is None):
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
-            if(len(lastTOD)>0):
-                lastTOD=lastTOD[0][0]
-            else:
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
-            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
-
-        start = int(time.time())
-
-        if(self.isChar(entityID)):
-            end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
-            return "You have given a character. Leadership reports are allowed for corporations or alliances only"
-        elif(self.isCorp(entityID)):
-            end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
-            return self.genCorpLeadershipReport(entityID)
-        elif(self.isAlliance(entityID)):
-            end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
-            return self.genAllianceLeadershipReport(entityID)
-        
-        else:
-            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
-
-            if(len(lastTOD)>0):
-                lastTOD=lastTOD[0][0]
-            else:
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+        if(entityID is None):
+            self.entityNotFound(entity)
             
-            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
-        return "A failure state that should never have been reached was reached. Either your entity is not a corporation or alliance, or it has no killboard history in w space"
+        report = self.genericReportWithErrorHandeling(pairs, entityID)
 
+        if(report is None):
+            self.entityNotFound(entity)
+        return report
+
+    
+    def charLeadershipReportFailureWrapper(self, entity):
+        entity = self.sql.getCharacterNameByCCPID(entity)[0][0]
+        return self.invalidInputMsg(entity, "LeadershipReport")
+
+    
     def genSiegeReport(self):
         print("generating siege report")
 
@@ -462,48 +440,28 @@ class dataProcessingInterface():
 
         return l[:15]
 
-
-
     def genHrsReport(self, entity):
-        print("Hrs Report for: "+ entity)
+        #genericReportWithErrorHandeling
+
+        pairs=[]
+        
+        pairs.append((self.isChar, self.genCharacterHrsReport))
+        pairs.append((self.isCorp, self.genCorpHrsReport))
+        pairs.append((self.isAlliance, self.genAllianceHrsReport))
+
+
         entityID = self.sql.getEntityID(entity)
-        
-        if(not isinstance(entityID, int)):
-            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
-            if(lastTOD is None):
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
-            if(len(lastTOD)>0):
-                lastTOD=lastTOD[0][0]
-            else:
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
-            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
-
-        start = int(time.time())
-
-        if(self.isChar(entityID)):
-            end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
-            return self.genCharacterHrsReport(entityID)
-        elif(self.isCorp(entityID)):
-            end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
-            return self.genCorpHrsReport(entityID)
-        elif(self.isAlliance(entityID)):
-            end  = int(time.time())
-            print("isX took: "+str(end-start)+"")
-            return self.genAllianceHrsReport(entityID)
-        
-        else:
-            lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
-
-            if(len(lastTOD)>0):
-                lastTOD=lastTOD[0][0]
-            else:
-                return "The DB appears to be locked. The previous day's kills are likely being processed, please wait a few minutes and try again."
+        if(entityID is None):
+            self.entityNotFound(entity)
             
-            return "Entity: \""+ str(entity) +"\" has no kill/death history in w space as of "+str(lastTOD)
-        return "A failure state that should never have been reached was reached. Either your entity is not a character, corporation, or alliance, or it has no killboard history in w space"
+        report = self.genericReportWithErrorHandeling(pairs, entityID)
+
+        if(report is None):
+            self.entityNotFound(entity)
+        return report
+
     
+   
     def genEntityHrsReport(self, hrFunction, eID):
 
         r=self.sql.getCachedReport(self.getHrsReportType(), eID)
@@ -781,8 +739,25 @@ class dataProcessingInterface():
         return 4
     def getSiegeReportType(self):
         return 5
+    def isDBlocked(self):
+        
+        lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+        if(lastTOD is None or len(lastTOD)<=0):
+            raise DBLockedException()
+        lastTOD = self.sql.sqlCommand("select max(kill) from attackers")
+        if(lastTOD is None or len(lastTOD)<=0):
+            raise DBLockedException()
 
-
+    def entityNotFound(self, entity):
+        lastTOD = self.sql.sqlCommand("select max(timeofdeath) from kills")
+        if(lastTOD is None or len(lastTOD)<=0):
+            raise DBLockedException()
+        raise EntityNotFoundException(entity, lastTOD[0][0])
+    
+    def getFunctionName(self):
+        return str(inspect.currentframe().f_back.f_code.co_name)
+    def invalidInputMsg(self, i, reportName):
+        return "Input: "+str(i)+" invalid for report: "+str(reportName)+"\nBe sure you are requesting a report with arguments that make sense in the context of the report.\nRequesting a list of FCs makes sense for a corp, but not a character"
 
 if(False):
     d = dataProcessingInterface()

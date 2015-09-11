@@ -125,7 +125,7 @@ class sqlConnection():
         
         command="insert or ignore into killsRaw (zKillID, killmail, processed, skipped) values (?,?, 'False','False');"
         return self.sqlCommandParameterized(command, (zkillID, rawKM))
-       
+        
     def insertAlliance(self, ccpID, name):
         command = "insert or ignore into alliances (ccpID, name) values (?,?);"
         return self.sqlCommandParameterized(command, (ccpID, name))
@@ -154,9 +154,16 @@ class sqlConnection():
     def getCharacterByCCPID(self, ccpID):
         command = "select * from players where ccpID = ?;"
         return self.sqlCommandParameterized(command, (ccpID,))
+    def getCharacterNameByCCPID(self, ccpID):
+        command = "select name from players where ccpID = ?;"
+        return self.sqlCommandParameterized(command, (ccpID,))
     def getCharacterByName(self, name):
         command = "select * from players where name = ?;"
         return self.sqlCommandParameterized(command, (name,))
+    def getCharacterIDByName(self, name):
+        command = "select ccpid from players where name = ?;"
+        return self.sqlCommandParameterized(command, (name,))
+
     
     def getCorpByCCPID(self, ccpID):
         command = "select * from corporations where ccpid = ?;"
