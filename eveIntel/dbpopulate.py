@@ -126,6 +126,7 @@ def processPulledKills():
             rows = sql.sqlCommand(command)
     print("beginning commit")
     sql.commit()
+    sql.sqlCommand("update reportCache set valid='False'")
     print("done processing pulled kills count = " +str(processedRows))
     
 def processRawKill(row):
@@ -192,6 +193,8 @@ def insertCharIfNotExist(char):
     
     if(char["characterName"]==''):
         return False #not processing modules yet
+    if(char["characterID"]<31009000): #some killmails are bugged and list the system as a victim or attacker
+        return False
     
     if(char["allianceName"] !=''):
         

@@ -130,6 +130,7 @@ def processPulledKills():
             rows = sql.sqlCommand(command)
     print("beginning commit")
     sql.commit()
+    sql.sqlCommand("update reportCache set valid='False'")
     print("done processing pulled kills count = " +str(processedRows))
     
 def processRawKill(row):
@@ -265,7 +266,7 @@ def populateSystems():
     for i in range(thera, whend):
         name = sde.getSolarNameBySolarID(i)
         if(name is not None):
-            sql.sqlCommandParameterized2("insert or ignore into systems (ccpID, name, lastPulled) values(?, ?, date('2015-03-18'));", (str(i), name))
+            sql.sqlCommandParameterized2("insert or ignore into systems (ccpID, name, lastPulled) values(?, ?, date('2000-01-01'));", (str(i), name))
             wcount = wcount+1
     sql.commit()
     print(str(wcount)+" w space systems added")
