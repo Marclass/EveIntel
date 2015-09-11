@@ -697,8 +697,13 @@ class dataProcessingInterface():
 
         avgdelta = float(int((avgdelta*1000))%1000)/1000
 
-        confidence = 2**(daycount/2) *killcount * max( -.1 * (avgdelta*10 -24)**2 +5, 1)
+
         lastKill = str(dates[0].year)+"-"+str(dates[0].month)+"-"+str(dates[0].day)
+        now = datetime.datetime.now().date()
+        confidence = 2**(daycount/2) *killcount *  1/max(1, 2**(((now-dates[0].date()).days)/7) )
+        #max( -.1 * (avgdelta*10 -24)**2 +5, 1) *
+        
+        
         return (name, killcount, daycount, avgdelta, confidence, lastKill)
         
 
