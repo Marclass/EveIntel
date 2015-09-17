@@ -32,51 +32,91 @@ Datamining tool for the game "Eve Online" using public pvp data.
 <li>Solar system report: find entity that lives in system</li>
 <li>FC/PvP report: find players best at following primaries. FCs tend to rank highly</li>
 <li>Hr report: creates a graph showing when entity is most active</li>
+<li>Siege report: lists who has sieged who in the last two days and killed structures</li>
 </ol></p>
 <p> Example usage:
-note: reports other than home and system reports are not called via genReport(), expect an api refractor in the future
+All reports are called via a reportInterface() object.
 <pre>
 <code>
-from eveIntel.dataprocessinginterface import dataProcessingInterface
-data = dataProcessingInterface()
+from eveIntel.reportinterface import reportInterface
+data = reportInterface()
 entity="Lazerhawks"
-report = data.genReport(entity)
+report = data.getHomeReport(entity)
 print(report)
 
-System      NumKills+Losses    DaysRepresented    Avg Kill Delta(days)    Confidence Rating  Most recent kill/loss
---------  -----------------  -----------------  ----------------------  -------------------  -----------------------
-J151909                 760                215                   0.69           1.23317e+35  2015-7-30
-J142528                 569                 16                   0.713     145664            2015-5-19
-J222045                 349                 13                   0.588      22336            2015-3-29
-J205141                 798                  8                   0.399      12768            2015-2-23
-J124046                  95                 14                   0.783      12160            2015-6-3
-J100820                  82                 15                   0.189      10496            2015-7-25
-Thera                   201                 11                   0.11        6432            2015-7-20
-J150020                 182                  9                   0.535       2912            2015-6-4
-J125544                  40                 12                   0.408       2560            2015-6-4
-J111249                  79                 10                   0.72        2528            2015-6-27
-J213125                  70                 11                   0.89        2240            2015-6-19
-J105934                  34                 12                   0.442       2176            2015-7-12
-J133252                  63                 11                   0.718       2016            2015-5-23
-J213226                  93                  9                   0.415       1488            2015-3-22
-J110018                  57                  8                   0.729        912            2015-7-25
+System      NumKills+Losses    DaysRepresented  Class         Confidence Rating  Most recent kill/loss
+--------  -----------------  -----------------  ----------  -------------------  -----------------------
+J151909                 792                225  C5 (buggy)           4.1123e+36  2015-9-14
+J124046                 130                 16  C5 (buggy)       33280           2015-9-16
+J105934                 173                 15  C6 (buggy)       22144           2015-9-13
+Thera                   205                 13  Thera             1640           2015-8-24
+J125544                  56                 15  C5 (buggy)         896           2015-8-25
+J110018                  62                 10  C5 (buggy)         496           2015-9-1
+J213226                  98                 10  C5 (buggy)         196           2015-8-13
+J115405                  48                  6  C5 (buggy)         192           2015-9-3
+J170540                  46                  7  C5 (buggy)         184           2015-9-5
+J164430                  71                  9  C5 (buggy)         142           2015-8-22
+J171013                  35                  7  C5 (buggy)         140           2015-9-4
+J152820                 136                  5  C5 (buggy)         136           2015-8-30
+J152111                  59                  6  C5 (buggy)         118           2015-8-28
+J135540                  50                  9  C5 (buggy)         100           2015-8-22
+J111518                  25                  7  C5 (buggy)         100           2015-9-5
 
+print(data.getSolReport("J100820"))
 
-print(data.genReport("J100820"))
+corporation                                      Kills+losses    Days Represented    Confidence Rating  Most recent kill/loss
+---------------------------------------------  --------------  ------------------  -------------------  -----------------------
+Sleeper Social Club                                      1882                 497                  inf  2015-09-13
+Future Corps                                             1866                 496                  inf  2015-09-13
+Lazerhawks                                                 84                  22                21504  2015-07-25
+R3d Fire                                                   16                   3                   32  2015-09-09
+Vision Inc                                                 16                   4                   32  2015-08-24
+Hole Control                                               16                   4                   32  2015-08-24
+WormHole Occupation and Resource Exploitation               8                   4                   16  2015-08-21
+Ixtab.                                                     52                   9                   13  2015-06-23
+Ministry of War                                             6                   4                    6  2015-08-16
+Radical Astronauts Plundering Eve                           6                   3                    6  2015-08-21
 
-corporation            Kills+losses    Days Represented    Confidence Rating  Most recent kill/loss
--------------------  --------------  ------------------  -------------------  -----------------------
-Sleeper Social Club            1852                 484                  inf  2015-08-03
-Future Corps                   1836                 483                  inf  2015-08-03
-Lazerhawks                       84                  22               172032  2015-07-25
-Ixtab.                           52                   9                  104  2015-06-23
-Isogen 5                          7                   4                   28  2015-07-24
-Wormhole Holders                  6                   4                   24  2015-07-28
-Brave Collective                  9                   5                   18  2015-07-20
-The Desolate Order                7                   4                   14  2015-07-20
-Atztech Inc.                     29                   5                   14  2015-06-23
-EVE University                    4                   3                    8  2015-08-03
-</code>
+print(data.getLeadershipReport("hard knocks inc."))
+
+Pilot              KillCount    PossibleKills    Whore %    NumFights        Confidence
+---------------  -----------  ---------------  ---------  -----------  ----------------
+Braxus Deninard          847             1173   0.72208           115       1.55933e+06
+sHanQ Myteia             710              988   0.718623          105       1.10559e+06
+Gewik O'Drakar           418              740   0.564865           64  603912
+NoobMan                  406              726   0.559229           66  580710
+DaJokr                   308              684   0.450292           52  505825
+Josh Tsutola             469              636   0.737421           47  459632
+Pantuf                   369              555   0.664865           48  345638
+gr33nCO                  301              548   0.54927            62  330292
+Jaiimez Skor             305              547   0.557587           47  329562
+Franky Saken             246              546   0.450549           35  322324
+J3rz11                   278              493   0.563895           42  267998
+Blizzaro                 215              493   0.436105           39  262128
+matt jaker               358              476   0.752101           53  258116
+Turd Destroyer           207              483   0.428571           33  251274
+EMU EVIL                 191              466   0.409871           31  233140
+
+print(data.getSiegeReport())
+
+System    Besieged                 Siege Date    Siegers                                             num Structures killed    num Attackers
+--------  -----------------------  ------------  ------------------------------------------------  -----------------------  ---------------
+J212319   Sacred Soldiers          2015-09-15    SUPREME MATHEMATICS                                                    39                8
+J113701   Sleeper Slumber Party    2015-09-15    Hard Knocks Inc.                                                       23                4
+J110016   G.F.Y                    2015-09-15    Bros Before Holes                                                      12                2
+J125634   Dredge X INC             2015-09-16    Haywire.                                                               11                2
+J164613   FREE BURRITO LTD.        2015-09-15    Blackwater Associates                                                   8                1
+J231137   Night cats               2015-09-16    SUPREME MATHEMATICS                                                     8                1
+J144153   NanoTapkiCorp            2015-09-16    Exit-Strategy                                                           7                1
+J123249   Chaos Order              2015-09-15    EyEs.FR                                                                 7                3
+J163641   Panga Management         2015-09-16    Polarized                                                               7                2
+J212906   Orcus Initiative         2015-09-15    Funny Scramble Inc.                                                     6                1
+J155616   The Alabaster Albatross  2015-09-15    Russian industrial corporation a name of G-gurda                        5                1
+J132458   Low-Life Mining Company  2015-09-15    Nehalem Inc.                                                            5                7
+J100237   D.I.E.S.E.L.             2015-09-16    The Short Bus Squad                                                     5                2
+J133613   Revelaetions             2015-09-16    Major League Infidels                                                   4                3
+J145848   JinRoh Raiding Command   2015-09-15    Polarized                                                               3                4
+
 </pre>
 Because the db is powered by sqlite it doesn't handle multiple users very well, but a switch to postgres is planned for later.
 </p>
