@@ -125,7 +125,7 @@ class sqlConnection():
         
         command="insert or ignore into killsRaw (zKillID, killmail, processed, skipped) values (?,?, 'False','False');"
         return self.sqlCommandParameterized(command, (zkillID, rawKM))
-        
+    
     def insertAlliance(self, ccpID, name):
         command = "insert or ignore into alliances (ccpID, name) values (?,?);"
         return self.sqlCommandParameterized(command, (ccpID, name))
@@ -178,7 +178,9 @@ class sqlConnection():
     def getAllianceByName(self, name):
         command  = "select * from alliances where name = ?;"
         return self.sqlCommandParameterized(command, (name,))
-    
+    def resetReportCache(self):
+        command ="update reportcache set valid='False'"
+        return self.sqlCommand(command)
     def getKillsByCharacterName(self, name):
         command ="select killmail from killsRaw km, kills k, attackers a, players p"
         command = command + " where p.name = ? and a.player = p.ID and a.kill = k.id and k.zKillID = km.zKillID"

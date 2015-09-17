@@ -20,6 +20,7 @@ class dataProcessingInterface():
         self.eve  = evelinkinterface()
         self.sql = sqlConnection()
         self.sql.connect()
+        #self.sql.resetReportCache()
         self.sde = sdeInterface()
 
         self.homeHeader=["System", "#Kills", "#Losses", "Kill dt avg",
@@ -46,6 +47,7 @@ class dataProcessingInterface():
 
     def genReport(self, entity):
         """more compact genReport"""
+        print("generating home/Sol report for: "+str(entity))
         pairs=[]
         pairs.append((self.isChar, self.genCharReport))
         pairs.append((self.isCorp, self.genCorpReport))
@@ -320,7 +322,7 @@ class dataProcessingInterface():
 
     def genLeadershipReport(self, entity):
         #genericReportWithErrorHandeling
-
+        print("gnerating leadership report for: "+str(entity))
         pairs=[]
         pairs.append((self.isChar, self.charLeadershipReportFailureWrapper))
         pairs.append((self.isCorp, self.genCorpLeadershipReport))
@@ -442,7 +444,7 @@ class dataProcessingInterface():
 
     def genHrsReport(self, entity):
         #genericReportWithErrorHandeling
-
+        print("generating hrs report for: "+str(entity))
         pairs=[]
         
         pairs.append((self.isChar, self.genCharacterHrsReport))
@@ -602,8 +604,8 @@ class dataProcessingInterface():
     def findEntityHome(self, eID, key, kills):
         #joint = kills+losses
         response =""
-        killHead = ["System", "NumKills+Losses", "DaysRepresented", "Avg Kill Delta(days)", "Confidence Rating", "Most recent kill/loss"]
-
+        #killHead = ["System", "NumKills+Losses", "DaysRepresented", "Avg Kill Delta(days)", "Confidence Rating", "Most recent kill/loss"]
+        killHead = ["System", "NumKills+Losses", "DaysRepresented", "Class", "Confidence Rating", "Most recent kill/loss"]
 
         stats = self.findEntityHomeRaw(eID, key, kills)
 
@@ -620,7 +622,8 @@ class dataProcessingInterface():
         response =""
 
         killTable = ""
-        killHead = ["System", "NumKills+Losses", "DaysRepresented", "Avg Kill Delta(days)", "Confidence Rating", "Most recent kill/loss"]
+        #killHead = ["System", "NumKills+Losses", "DaysRepresented", "Avg Kill Delta(days)", "Confidence Rating", "Most recent kill/loss"]
+        killHead = ["System", "NumKills+Losses", "DaysRepresented", "Class", "Confidence Rating", "Most recent kill/loss"]
         killT = []
         
         zkill = 0
@@ -661,8 +664,8 @@ class dataProcessingInterface():
 ##        if(len(system)>1):
 ##            print(system)
 ##            exit
-        name = system[0][1]
-        name = self.sql.getSolarNameBySolarID(name)[0][0]
+        sysID = system[0][1]
+        name = self.sql.getSolarNameBySolarID(sysID)[0][0]
         killcount = len(system)
         days={}
         daycount = 0
@@ -703,10 +706,39 @@ class dataProcessingInterface():
         confidence = 2**(daycount/2) *killcount *  1/max(1, 2**(((now-dates[0].date()).days)/7) )
         #max( -.1 * (avgdelta*10 -24)**2 +5, 1) *
         
-        
-        return (name, killcount, daycount, avgdelta, confidence, lastKill)
-        
+        sysType = self.getSysClassByID(sysID)
+        return (name, killcount, daycount, sysType, confidence, lastKill)
 
+    def getSysClassByID(self, sysID):
+        
+        #thera =31000005 
+        #c1 <=31000354
+        #c2 <=31000879
+        #c3 <=31001374
+        #c4 <=31001879
+
+        #c5-6 indexes buggy as fuck
+        
+        #c5 <=31002366 and <=31002504 -C6
+        #c6 31002366 to 31002470 (inclusive)
+        #shattered >=31002505
+        if(sysID < 31000005):
+            return "K space"
+        if(sysID==31000005):
+            return "Thera"
+        if(sysID<=31000354):
+            return "C1"
+        if(sysID <=31000879):
+            return "C2"
+        if(sysID <=31001374):
+            return "C3"
+        if(sysID <= 31001879):
+            return "C4"
+        if((sysID >= 31002366 and sysID <=31002470) or (sysID ==31002487 or sysID ==31002489 or sysID ==31002492)):
+            return "C6 (buggy)"
+        if(sysID <=31002366 or sysID <=31002504):
+            return "C5 (buggy)"
+        return "Shattered"
 
         
     def findEntityPeakTime(self, eID, key, kills, losses):
