@@ -428,8 +428,8 @@ class dataProcessingInterface():
             #calc confidence and append it to row then sort by confidence
             killCount = i[2]
             totalKills = i[3]
-            fightPercent =i[3]
-            fightNum = i[4]
+            fightPercent =i[4]
+            fightNum = i[5]
             #print(i)
             
             confidence = fightPercent**2 * 2**(fightNum/4)

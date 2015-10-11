@@ -25,7 +25,7 @@ Datamining tool for the game "Eve Online" using public pvp data.
 <li>run dbpopulate and wait</li></ol></p>
 
 <h3>Usage</h3>
-<p>Once setup, EveIntel is primarally used via the data processing interface.</p>
+<p>Once setup, EveIntel is primarally used via the report interface.</p>
 <p>Current reports:
 <ol>
 <li>Entity home report: find entity home</li>

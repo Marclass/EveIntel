@@ -63,6 +63,7 @@ create table if not exists kills (
 	system integer not null,
 	corporation integer not null,
 	alliance integer,
+	isk integer,
 	
 	foreign key (alliance) references alliances(ccpid),
 	foreign key (corporation) references corporation(ccpID),
