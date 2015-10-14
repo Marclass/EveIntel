@@ -46,13 +46,8 @@ def pullWHKills():
         if(i==31000006):
             continue
         kills=[]
-        
         try:
-            lastPulled = s("select max(timeofdeath) from kills where system = "+str(i))
-            if(type(lastPulled)==list and len(lastPulled)>0):
-                lastPulled = str(lastPulled[0][0])
-            else:
-                lastPulled = None
+            lastPulled = str(s("select max(timeofdeath) from kills where system = "+str(i))[0][0])
             
 
             if(lastPulled is not None):
@@ -74,7 +69,7 @@ def pullWHKills():
         print(str(delta) +" kils for this wh")
         print("At ID "+str(i))
         print("system name: "+ sde.getSolarNameBySolarID(str(i))+"\n")
-        time.sleep(2)
+        time.sleep(12)
 
 
 
@@ -94,32 +89,33 @@ def s(command):
 def processPulledKills():
     count  = sql.sqlCommand("select count(1) from killsraw where processed = 'False' and skipped = 'False'")[0][0]
     command = "select id, zkillid, killmail from killsraw where processed ='False' and skipped = 'False' Limit 50000;" #arg order doesnt get preserved in returned rows for some reason
-    command = "select id, zkillid, killmail from killsraw where processed ='False' and skipped = 'False';" #arg order doesnt get preserved in returned rows for some reason
+    #command = "select id, zkillid, killmail from killsraw where processed ='False' and skipped = 'False';" #arg order doesnt get preserved in returned rows for some reason
     rows = sql.sqlCommand(command)
     processedRows = 0
     skipped =0
     print("Beginning KM processing, count = "+str(count))
+##
+##    for r in rows:
+##        success = processRawKill(r)
+##        if(success):
+##            sql.sqlCommandParameterized2("update killsraw set processed ='True' where id = ?",(r[0],))
+##            processedRows = processedRows +1
+##        else:
+##            sql.sqlCommandParameterized2("update killsraw set skipped = 'True' where id = ?",(r[0],))
+##            skipped = skipped+1
+##        if((processedRows+skipped)%1000==0):
+##            print(str(processedRows)+" processed so far out of "+str(count))
+##            print(str(skipped)+" skipped so far out of "+str(count))
 
-    for r in rows:
-        success = processRawKill(r)
-        if(success):
-            sql.sqlCommandParameterizedWithoutCommit("update killsraw set processed ='True' where id = ?",(r[0],))
-            processedRows = processedRows +1
-        else:
-            sql.sqlCommandParameterizedWithoutCommit("update killsraw set skipped = 'True' where id = ?",(r[0],))
-            skipped = skipped+1
-        if((processedRows+skipped)%1000==0):
-            print(str(processedRows)+" processed so far out of "+str(count))
-            print(str(skipped)+" skipped so far out of "+str(count))
             
-    while(False and len(rows)>0):
+    while(True and len(rows)>0):
         row = rows.pop()
         success = processRawKill(row)
         if(success):
-            sql.sqlCommandParameterizedWithoutCommit("update killsraw set processed ='True' where id = ?",(row[0],))
+            sql.setRawKillProcessed(row[0])
             processedRows = processedRows +1
         else:
-            sql.sqlCommandParameterizedWithoutCommit("update killsraw set skipped = 'True' where id = ?",(row[0],))
+            sql.setRawKillSkipped(row[0])
             skipped = skipped+1
         if(len(rows)%1000 ==0):
             print("processed : "+str(processedRows)+" out of: "+ str(count)+" skipped : "+str(skipped) +" % done: " + str((processedRows+skipped+0.0) / count *100))
@@ -130,7 +126,8 @@ def processPulledKills():
             rows = sql.sqlCommand(command)
     print("beginning commit")
     sql.commit()
-    sql.sqlCommand("update reportCache set valid='False'")
+    #sql.sqlCommand("update reportCache set valid='False'")
+    sql.invalidateReportCache()
     print("done processing pulled kills count = " +str(processedRows))
     
 def processRawKill(row):
@@ -139,23 +136,26 @@ def processRawKill(row):
         return False
 
     insertCharsOnly = False
+    updateOnly =True
     
     ID = row[0]
     zkillid = row[1]
     killmail = literal_eval(row[2])
-
     if(len(killmail) !=8):
         print(str(zkillid) +" was malformed, skipping")
         return False
-
-    
     vic = killmail["victim"]
+    #vic keys
+    #[u'corporationID', u'factionID', u'damageTaken', u'characterName', u'factionName', u'allianceName', u'allianceID', u'shipTypeID', u'corporationName', u'characterID']
 
 ##    if(vic["characterName"] ==''):
 ##        print("structure death, skipping id: "+ str(ID))
 ##        return False
     
     date = killmail["killTime"]
+    #print(ID)
+    #print(zkillid)
+    #print(str(killmail))
     attackers = killmail["attackers"]
     system = killmail["solarSystemID"]
 
@@ -169,11 +169,11 @@ def processRawKill(row):
 
     if(not insertCharsOnly):
         if(vic["allianceName"]!=''):
-            sql.sqlCommandParameterizedWithoutCommit("""insert or ignore into kills (zKillID, victim, timeOfDeath, system, corporation, alliance, ship)
-                                            values (?,?,?,?,?,?,?)""", (zkillid, vic["characterID"], date, system, vic["corporationID"], vic["allianceID"], vic["shipTypeID"]))
+            sql.insertKill(zkillid, vic["characterID"], date, system, vic["corporationID"],  vic["shipTypeID"], alliance=vic["allianceID"])
+            
         else:
-            sql.sqlCommandParameterizedWithoutCommit("insert or ignore into kills (zKillID, victim, timeOfDeath, system, corporation, ship) values (?,?,?,?,?,?)"
-                                         , (zkillid, vic["characterID"], date, system, vic["corporationID"], vic["shipTypeID"]))              
+            sql.insertKill(zkillid, vic["characterID"], date, system, vic["corporationID"],  vic["shipTypeID"])
+
     for i in attackers:
         insertCharIfNotExist(i)
         if(not insertCharsOnly ):
@@ -194,36 +194,28 @@ def insertCharIfNotExist(char):
     
     if(char["characterName"]==''):
         return False #not processing modules yet
+    if(char["characterID"]<31009000): #some killmails are bugged and list the system as a victim or attacker
+        return False
     
     if(char["allianceName"] !=''):
         
-##        sql.sqlCommandParameterized2("""
-##                                        insert into alliances (ccpID, name) select (?,?)
-##                                        where not exists( select * from alliances where ccpID =? limit 1)""",
-##                                     (char["allianceID"],char["allianceName"],char["allianceID"]))
-         sql.sqlCommandParameterizedWithoutCommit("insert or replace into alliances (ccpid, name) values(?,?)",(char["allianceID"],char["allianceName"]))
+
+         sql.insertAlliance(char["allianceID"],char["allianceName"])
         
     if(char["corporationID"] !=''):
         if(char["allianceName"]==''):
-##            sql.sqlCommandParameterized2("""
-##                                         insert into corporations(ccpID, name) select(?,?)
-##                                         where not exists(select * from corporations where ccpID=? limit 1)""",
-##                                         (char["corporationID"],char["corporationID"], char["corporationName"]))
-            sql.sqlCommandParameterizedWithoutCommit("insert or replace into corporations(ccpid, name) values(?,?)",(char["corporationID"], char["corporationName"]))
-        else:
-##            sql.sqlCommandParameterized2("""insert into
-##                                         corporations(ccpID, name, alliance) select (?,?,?)
-##                                         where not exists(select * from corporations where ccpID=? limit 1) """,
-##                                         (char["corporationID"], char["corporationName"], char["allianceID"],char["corporationID"]))
-            sql.sqlCommandParameterizedWithoutCommit("insert or replace into corporations(ccpid, name, alliance) values(?,?,?)",
-                                         (char["corporationID"], char["corporationName"], char["allianceID"]))
 
-##    sql.sqlCommandParameterized2("""insert into players(ccpID, name, corporation) select ?, ?, ?
-##                                 where not exists(
-##                                     select * from players where ccpid = ? limit 1)""",
-##                                 (char["characterID"],char["characterName"],char["corporationID"],char["characterID"]))
-    sql.sqlCommandParameterizedWithoutCommit("insert or replace into players(ccpid, name, corporation) values(?,?,?)",
-                                 (char["characterID"],char["characterName"],char["corporationID"]))
+
+            sql.insertCorp(char["corporationID"], char["corporationName"])
+        else:
+
+
+            sql.insertCorp(char["corporationID"], char["corporationName"], alliance=char["allianceID"])
+
+
+    sql.insertPlayer(char["characterID"],char["characterName"],char["corporationID"])
+
+
     return True
 
 
@@ -231,20 +223,17 @@ def insertAttacker(char, zkillID):
     #
     if(char["characterName"]!=''):
         if(char["allianceName"] ==''):
-            sql.sqlCommandParameterizedWithoutCommit("insert or replace into attackers (player, kill, damage, corporation, ship) values (?,?,?,?,?)",
-                                         (char["characterID"], zkillID, char["damageDone"], char["corporationID"],char["shipTypeID"]))
+            sql.insertAttacker( char["characterID"], zkillID, char["damageDone"], char["corporationID"],char["shipTypeID"])
         else:
-            sql.sqlCommandParameterizedWithoutCommit("insert or replace into attackers (player, kill, damage, corporation, alliance, ship) values (?,?,?,?,?,?)",
-                                         (char["characterID"], zkillID, char["damageDone"], char["corporationID"], char["allianceID"],char["shipTypeID"]))
+            sql.insertAttacker(char["characterID"], zkillID, char["damageDone"], char["corporationID"], char["shipTypeID"], allianceID=char["allianceID"])
     else:
         #npc
         if(char["allianceName"] ==''):
-            sql.sqlCommandParameterizedWithoutCommit("insert or replace into attackers (player, kill, damage, corporation, ship) values (?,?,?,?,?)",
-                                         (1, zkillID, char["damageDone"], char["corporationID"], char["shipTypeID"]))
+            sql.insertAttacker( 1, zkillID, char["damageDone"], char["corporationID"],char["shipTypeID"])
+            
         else:
-            sql.sqlCommandParameterizedWithoutCommit("insert or replace into attackers (player, kill, damage, corporation, alliance, ship) values (?,?,?,?,?,?)",
-                                         (1, zkillID, char["damageDone"], char["corporationID"],char["allianceID"], char["shipTypeID"]))
-    
+            sql.insertAttacker(1, zkillID, char["damageDone"], char["corporationID"], char["shipTypeID"], allianceID=char["allianceID"])
+
 
         
 def populateSystems():
@@ -254,7 +243,8 @@ def populateSystems():
     for i in range(start, end):
         name = sde.getSolarNameBySolarID(i)
         if(name is not None):
-            sql.sqlCommandParameterizedWithoutCommit("insert or ignore into systems (ccpID, name, lastPulled) values(?, ?, date('2015-03-18'));", (str(i), name))
+            #sql.sqlCommandParameterizedWithoutCommit("insert or ignore into systems (ccpID, name, lastPulled) values(?, ?, date('2015-03-18'));", (str(i), name))
+            sql.insertSystem(i, name)
             count = count+1
     print(str(count)+" k space systems added")
 
@@ -266,7 +256,8 @@ def populateSystems():
     for i in range(thera, whend):
         name = sde.getSolarNameBySolarID(i)
         if(name is not None):
-            sql.sqlCommandParameterizedWithoutCommit("insert or ignore into systems (ccpID, name, lastPulled) values(?, ?, date('2000-01-01'));", (str(i), name))
+            #sql.sqlCommandParameterizedWithoutCommit("insert or ignore into systems (ccpID, name, lastPulled) values(?, ?, date('2015-03-18'));", (str(i), name))
+            sql.insertSystem(i, name)
             wcount = wcount+1
     sql.commit()
     print(str(wcount)+" w space systems added")
@@ -282,6 +273,6 @@ def populateSystems():
 
 #sql.close()
 #print(sql.sqlCommand(""))
-pullWHKills()
+#pullWHKills()
 #populateSystems()
-processPulledKills()
+#processPulledKills()
