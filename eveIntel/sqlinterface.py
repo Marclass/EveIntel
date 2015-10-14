@@ -1,4 +1,4 @@
-﻿
+
 
 import sqlite3 as sql
 import sys
@@ -131,7 +131,7 @@ class sqlConnection():
         
         command="insert or ignore into killsRaw (zKillID, killmail, processed, skipped) values (?,?, 'False','False');"
         return f(command, (zkillID, rawKM))
-    
+
     def insertAlliance(self, ccpID, name, commit=False):
         f=self.sqlCommandParameterized
         if(commit):
@@ -157,7 +157,7 @@ class sqlConnection():
         if(commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
-        if():
+        if(alliance is None):
             command = "insert or ignore into players (ccpID, name, corporation) values (?,?,?);"
             return f(command, (ccpID, name, corporation))
         else:
@@ -170,7 +170,7 @@ class sqlConnection():
         if(commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
-        if(alliance is None):
+        if(allianceID is None):
             command="insert or replace into attackers (player, kill, damage, corporation, ship) values (?,?,?,?,?);"
             return f(command, (character, zkillID, damage, corpID, shipType))
         else:
@@ -213,7 +213,7 @@ class sqlConnection():
         return f(command, (killID,))
     
     def invalidateReportCache(self):
-        return sql.sqlCommand("update reportCache set valid ='False';")
+        return self.sqlCommand("update reportCache set valid ='False';")
 
 
     ##Gets
