@@ -41,6 +41,7 @@ class dataProcessingInterface():
                 end = int(time.time())
                 print(str(validator.func_name) +" took: "+str(end-start))
                 #print(report)
+                print(str(report.func_name)+" report at "+str(datetime.datetime.now()))
                 return report(args)
         return None
 
@@ -409,12 +410,14 @@ class dataProcessingInterface():
         
         rtable=""
         players = sqlCall(eID)
-
+        
         sort = self.processLeadershipReport(players)
         rows=[]
         for i in sort:
             rows.append((i[1],i[2],i[3],i[4],i[5],i[6]))
-
+        if(len(rows)==0):
+            raise DBLockedException()
+        
         self.sql.insertCachedReport(self.getLeadershipReportType(), eID, str(rows))
         #print(str(type(rows) )+"\n"+str(rows))
         response = tabulate(rows, headers = rhead)
@@ -432,7 +435,7 @@ class dataProcessingInterface():
             fightNum = i[5]
             #print(i)
             
-            confidence = fightPercent**2 * 2**(fightNum/4)
+            confidence = fightPercent**2 * 2**(fightNum/3)
 
             l.append(list(i))
             
@@ -546,7 +549,7 @@ class dataProcessingInterface():
             #print(type(daysRep))
 
             #print(2**(daysRep/2.0))
-            confidence= 2**(daysRep/2) * killCount * 1/max(1, 2**(((now-lastKill).days)/14) )
+            confidence= 2**(daysRep/2) * killCount * 1/max(1, 2**(((now-lastKill).days)/7) )
             confidence=int(confidence)
             #confidence=int(confidence*1000)
             #confidence=confidence/1000.0
@@ -790,7 +793,7 @@ class dataProcessingInterface():
         if(lastTOD is None or len(lastTOD)<=0):
             raise DBLockedException()
         raise EntityNotFoundException(entity, lastTOD[0][0])
-    
+
     def getFunctionName(self):
         return str(inspect.currentframe().f_back.f_code.co_name)
     def invalidInputMsg(self, i, reportName):
