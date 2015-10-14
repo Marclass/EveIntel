@@ -47,8 +47,11 @@ def pullWHKills():
             continue
         kills=[]
         try:
-            lastPulled = str(s("select max(timeofdeath) from kills where system = "+str(i))[0][0])
-            
+            lastPulled = s("select max(timeofdeath) from kills where system = "+str(i))
+            if(type(lastPulled)==list and len(lastPulled)>0):
+                lastPulled = str(lastPulled[0][0])
+            else:
+                lastPulled = None
 
             if(lastPulled is not None):
                 lastDate = datetime.datetime.strptime(lastPulled.replace("-","").replace(" ","").replace(":",""),'%Y%m%d%H%M%S')
@@ -69,7 +72,7 @@ def pullWHKills():
         print(str(delta) +" kils for this wh")
         print("At ID "+str(i))
         print("system name: "+ sde.getSolarNameBySolarID(str(i))+"\n")
-        time.sleep(12)
+        time.sleep(2)
 
 
 
@@ -89,26 +92,26 @@ def s(command):
 def processPulledKills():
     count  = sql.sqlCommand("select count(1) from killsraw where processed = 'False' and skipped = 'False'")[0][0]
     command = "select id, zkillid, killmail from killsraw where processed ='False' and skipped = 'False' Limit 50000;" #arg order doesnt get preserved in returned rows for some reason
-    #command = "select id, zkillid, killmail from killsraw where processed ='False' and skipped = 'False';" #arg order doesnt get preserved in returned rows for some reason
+    command = "select id, zkillid, killmail from killsraw where processed ='False' and skipped = 'False';" #arg order doesnt get preserved in returned rows for some reason
     rows = sql.sqlCommand(command)
     processedRows = 0
     skipped =0
     print("Beginning KM processing, count = "+str(count))
-##
-##    for r in rows:
-##        success = processRawKill(r)
-##        if(success):
-##            sql.sqlCommandParameterized2("update killsraw set processed ='True' where id = ?",(r[0],))
-##            processedRows = processedRows +1
-##        else:
-##            sql.sqlCommandParameterized2("update killsraw set skipped = 'True' where id = ?",(r[0],))
-##            skipped = skipped+1
-##        if((processedRows+skipped)%1000==0):
-##            print(str(processedRows)+" processed so far out of "+str(count))
-##            print(str(skipped)+" skipped so far out of "+str(count))
+
+    for r in rows:
+        success = processRawKill(r)
+        if(success):
+            sql.setRawKillProcessed(row[0])
+            processedRows = processedRows +1
+        else:
+            sql.setRawKillSkipped(row[0])
+            skipped = skipped+1
+        if((processedRows+skipped)%1000==0):
+            print(str(processedRows)+" processed so far out of "+str(count))
+            print(str(skipped)+" skipped so far out of "+str(count))
 
             
-    while(True and len(rows)>0):
+    while(False and len(rows)>0):
         row = rows.pop()
         success = processRawKill(row)
         if(success):
@@ -273,6 +276,6 @@ def populateSystems():
 
 #sql.close()
 #print(sql.sqlCommand(""))
-#pullWHKills()
+pullWHKills()
 #populateSystems()
-#processPulledKills()
+processPulledKills()
