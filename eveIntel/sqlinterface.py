@@ -1,4 +1,4 @@
-
+﻿
 
 import sqlite3 as sql
 import sys
@@ -99,7 +99,7 @@ class sqlConnection():
 
         #if con:
             #con.close()
-    def sqlCommandParameterized2(self, command, params):
+    def sqlCommandParameterizedWithoutCommit(self, command, params):
         #
            
         
@@ -120,28 +120,103 @@ class sqlConnection():
         #if con:
             #con.close()
 
-        
-    def insertRawKM(self, zkillID, rawKM):
+    
+
+    ##Inserts
+    def insertRawKM(self, zkillID, rawKM, commit=False):
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+
         
         command="insert or ignore into killsRaw (zKillID, killmail, processed, skipped) values (?,?, 'False','False');"
-        return self.sqlCommandParameterized(command, (zkillID, rawKM))
+        return f(command, (zkillID, rawKM))
     
-    def insertAlliance(self, ccpID, name):
+    def insertAlliance(self, ccpID, name, commit=False):
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+
         command = "insert or ignore into alliances (ccpID, name) values (?,?);"
-        return self.sqlCommandParameterized(command, (ccpID, name))
+        return f(command, (ccpID, name))
     
-    def insertCorp(self, ccpID, name, alliance=None):
+    def insertCorp(self, ccpID, name, alliance=None, commit=False):
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+
         if(alliance is None):
             command = "insert or ignore into corporations (ccpID, name) values (?,?);"
-            return self.sqlCommandParameterized(command, (ccpID, name)) 
+            return f(command, (ccpID, name)) 
         else:
             command = "insert or ignore into corporations (ccpID, name, alliance) values (?,?,?);"
-            return self.sqlCommandParameterized(command, (ccpID, name, alliance))
+            return f(command, (ccpID, name, alliance))
 
-    def insertPlayer(self, ccpID, name, corporation):
-        command = "insert or ignore into players (ccpID, name, corporation) values (?,?,?);"
-        return self.sqlCommandParameterized(command, (ccpID, name, corporation))
+    def insertPlayer(self, ccpID, name, corporation, alliance=None, commit=False):
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
 
+        if():
+            command = "insert or ignore into players (ccpID, name, corporation) values (?,?,?);"
+            return f(command, (ccpID, name, corporation))
+        else:
+            command="insert or ignore into players (ccpID, name, corporation, alliance) values (?,?,?,?);"
+            return f(command, (ccpID, name, corporation, alliance))
+
+    def insertAttacker(self, character, zkillID, damage, corpID, shipType, allianceID=None, commit=False):
+        command=""
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+
+        if(alliance is None):
+            command="insert or replace into attackers (player, kill, damage, corporation, ship) values (?,?,?,?,?);"
+            return f(command, (character, zkillID, damage, corpID, shipType))
+        else:
+            command="insert or replace into attackers (player, kill, damage, corporation, alliance, ship) values (?,?,?,?,?,?);"
+            return f(command, (character, zkillID, damage, corpID, allianceID, shipType))
+
+    def insertKill(self, zkill, victim, timeofdeath, system, corporation, ship, alliance=None, commit=False):
+        command=""
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+
+        if(alliance is None):
+            command="insert or ignore into kills (zKillID, victim, timeOfDeath, system, corporation, ship) values (?,?,?,?,?,?);"
+            return f(command, (zkill, victim, timeofdeath, system, corporation, ship))
+        else:
+            command="insert or ignore into kills (zKillID, victim, timeOfDeath, system, corporation, alliance, ship) values (?,?,?,?,?,?);"
+            return f(command, (zkill, victim, timeofdeath, system, corporation, alliance, ship))
+
+    def insertSystem(self, ccpID, name, lastPulled='2003-01-01', commit=False):
+        command="insert or ignore into systems (ccpid, name, lastPulled) values (?,?, date(?));"
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+
+        return f(command, (ccpID, name, str(lastPulled)))
+
+    def setRawKillSkipped(self, killID, commit=False):
+        command = "update killsraw set skipped ='True' where id=?"
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+        return f(command, (killID,))
+
+    def setRawKillProcessed(self, killID, commit=False):
+        command = "update killsraw set processed ='True' where id=?"
+        f=self.sqlCommandParameterized
+        if(commit):
+            f=self.sqlCommandParameterizedWithoutCommit
+        return f(command, (killID,))
+    
+    def invalidateReportCache(self):
+        return sql.sqlCommand("update reportCache set valid ='False';")
+
+
+    ##Gets
     def getSystemByCCPID(self, ccpID):
         command="select * from systems where ccpID=?;"
         return self.sqlCommandParameterized(command, (ccpID,))
