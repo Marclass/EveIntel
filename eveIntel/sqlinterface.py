@@ -187,7 +187,7 @@ class sqlConnection():
             command="insert or ignore into kills (zKillID, victim, timeOfDeath, system, corporation, ship) values (?,?,?,?,?,?);"
             return f(command, (zkill, victim, timeofdeath, system, corporation, ship))
         else:
-            command="insert or ignore into kills (zKillID, victim, timeOfDeath, system, corporation, alliance, ship) values (?,?,?,?,?,?);"
+            command="insert or ignore into kills (zKillID, victim, timeOfDeath, system, corporation, alliance, ship) values (?,?,?,?,?,?,?);"
             return f(command, (zkill, victim, timeofdeath, system, corporation, alliance, ship))
 
     def insertSystem(self, ccpID, name, lastPulled='2003-01-01', commit=False):
