@@ -1,4 +1,4 @@
-﻿from eveIntel.zkillinterface import zKillInterface
+from eveIntel.zkillinterface import zKillInterface
 from eveIntel.sqlinterface import sqlConnection
 from eveIntel.evelinkinterface import evelinkinterface
 from eveIntel.sdeinterface import sdeInterface
@@ -101,10 +101,10 @@ def processPulledKills():
     for r in rows:
         success = processRawKill(r)
         if(success):
-            sql.setRawKillProcessed(row[0])
+            sql.setRawKillProcessed(r[0])
             processedRows = processedRows +1
         else:
-            sql.setRawKillSkipped(row[0])
+            sql.setRawKillSkipped(r[0])
             skipped = skipped+1
         if((processedRows+skipped)%1000==0):
             print(str(processedRows)+" processed so far out of "+str(count))
