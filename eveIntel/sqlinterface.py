@@ -125,7 +125,7 @@ class sqlConnection():
     ##Inserts
     def insertRawKM(self, zkillID, rawKM, commit=False):
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
         
@@ -134,7 +134,7 @@ class sqlConnection():
 
     def insertAlliance(self, ccpID, name, commit=False):
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
         command = "insert or ignore into alliances (ccpID, name) values (?,?);"
@@ -142,7 +142,7 @@ class sqlConnection():
     
     def insertCorp(self, ccpID, name, alliance=None, commit=False):
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
         if(alliance is None):
@@ -154,7 +154,7 @@ class sqlConnection():
 
     def insertPlayer(self, ccpID, name, corporation, alliance=None, commit=False):
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
         if(alliance is None):
@@ -167,7 +167,7 @@ class sqlConnection():
     def insertAttacker(self, character, zkillID, damage, corpID, shipType, allianceID=None, commit=False):
         command=""
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
         if(allianceID is None):
@@ -180,7 +180,7 @@ class sqlConnection():
     def insertKill(self, zkill, victim, timeofdeath, system, corporation, ship, alliance=None, commit=False):
         command=""
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
         if(alliance is None):
@@ -193,7 +193,7 @@ class sqlConnection():
     def insertSystem(self, ccpID, name, lastPulled='2003-01-01', commit=False):
         command="insert or ignore into systems (ccpid, name, lastPulled) values (?,?, date(?));"
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
 
         return f(command, (ccpID, name, str(lastPulled)))
@@ -201,14 +201,14 @@ class sqlConnection():
     def setRawKillSkipped(self, killID, commit=False):
         command = "update killsraw set skipped ='True' where id=?"
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
         return f(command, (killID,))
 
     def setRawKillProcessed(self, killID, commit=False):
         command = "update killsraw set processed ='True' where id=?"
         f=self.sqlCommandParameterized
-        if(commit):
+        if(not commit):
             f=self.sqlCommandParameterizedWithoutCommit
         return f(command, (killID,))
     
