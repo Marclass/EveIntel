@@ -61,7 +61,9 @@ def pullWHKills():
             killNum = killNum +len(kills)
             delta = len(kills)
             for kill in kills:
-                sql.insertRawKM(kill.killID, str(kill.__dict__))
+                res=sql.insertRawKM(kill.killID, str(kill.__dict__), commit=True)
+                #print(res)
+                #sql.commit()
         except Exception as err:
             print("Error pulling kills for ID "+str(i))
             print("system name: "+ sde.getSolarNameBySolarID(str(i)))
@@ -101,10 +103,10 @@ def processPulledKills():
     for r in rows:
         success = processRawKill(r)
         if(success):
-            sql.setRawKillProcessed(row[0])
+            sql.setRawKillProcessed(r[0])
             processedRows = processedRows +1
         else:
-            sql.setRawKillSkipped(row[0])
+            sql.setRawKillSkipped(r[0])
             skipped = skipped+1
         if((processedRows+skipped)%1000==0):
             print(str(processedRows)+" processed so far out of "+str(count))

@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{cf7de965-2ee3-41c6-a6c2-b5d0c519e512}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>eveIntel\limboRun.py</StartupFile>
+    <StartupFile>eveIntel\dbpopulateCron.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -30,9 +30,21 @@
     <Compile Include="eveIntel\evelinkinterface.py" />
     <Compile Include="eveIntel\Exceptions.py" />
     <Compile Include="eveIntel\limboRun.py" />
+    <Compile Include="eveIntel\sqlEngine.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="eveIntel\sqlEnginePostgres.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="eveIntel\sqlEngineSqlite.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="eveIntel\reportinterface.py" />
     <Compile Include="eveIntel\sdeinterface.py" />
     <Compile Include="eveIntel\sqlinterface.py" />
+    <Compile Include="eveIntel\testRun.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="eveIntel\zkillinterface.py" />
     <Compile Include="eveIntel\__init__.py" />
   </ItemGroup>

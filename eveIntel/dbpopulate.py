@@ -117,7 +117,7 @@ def processPulledKills():
         else:
             sql.setRawKillSkipped(row[0])
             skipped = skipped+1
-        if(len(rows)%1000 ==0):
+        if(len(rows)%1000 ==0 and len(rows) !=0):
             print("processed : "+str(processedRows)+" out of: "+ str(count)+" skipped : "+str(skipped) +" % done: " + str((processedRows+skipped+0.0) / count *100))
             #sql.commit()
         if(len(rows)==0):
