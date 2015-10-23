@@ -1,4 +1,4 @@
-
+﻿
 
 import psycopg2
 from eveIntel.sqlinterface import sqlConnection
@@ -8,7 +8,7 @@ from eveIntel.sqlEngineSqlite import sqlEngineSqlite
 from eveIntel.dbpopulate import *
 
 con = psycopg2.connect("""dbname= 'EveIntelDB' user='migration'
-host='localhost' password='migration3606273887976070'""")
+host='localhost' password=''""")
 
 
 sqliteDB = sqlConnection()
