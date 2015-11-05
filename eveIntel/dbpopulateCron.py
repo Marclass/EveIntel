@@ -144,7 +144,7 @@ def processRawKill(row):
     ID = row[0]
     zkillid = row[1]
     killmail = literal_eval(row[2])
-    if(len(killmail) !=8):
+    if(len(killmail) <8):
         print(str(zkillid) +" was malformed, skipping")
         return False
     vic = killmail["victim"]
